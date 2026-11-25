@@ -3625,6 +3625,772 @@
           ]
         }
       }
+    },
+    {
+      "id": "lola",
+      "light": "day",
+      "lineups": [
+        "lola"
+      ],
+      "talk": true,
+      "bible": "PELLY: Pelly the pelican, a big white clay pelican (a real pelican, not a duck) with a very long, straight peach-orange bill, longer than her head, and a big, soft, lumpy peach pouch hanging under it, a small round light-blue postal cap with a little white envelope badge (no anchor), no scarf, and a brown leather mail satchel across her body; about twice Echo's height. LOLA: Lola the llama, a young, friendly clay llama (a girl) about twice Echo's height, standing on four slim legs: soft, fluffy cream-white wool, a long fluffy neck, a round fluffy topknot of wool on her head, two tall banana-shaped ears, big shiny dark friendly eyes with long lashes, small pink cheeks, a gentle smiling mouth, small dark hooves, a short fluffy tail, and a sunny-yellow knitted scarf with little white pom-poms; no hat, no other clothes. LIZARD: a little sleepy clay lizard (a boy) about half of Echo's height, lying low on four short legs: smooth leaf-green skin with a pale lime tummy, a row of tiny round darker-green spots down his back, a long curly tail, big sleepy friendly eyes, small pink cheeks and a wide happy mouth. FRIENDS: three little clay park friends who come for lemonade: a little clay bunny (a girl) about Echo's height, with soft grey fur, long ears, a white fluffy tail, big friendly eyes and small pink cheeks; a little round clay hedgehog (a boy) about two thirds of Echo's height, with soft brown spines, a cream face, a little black nose, big friendly eyes and small pink cheeks; and a tiny clay mouse (a girl) about half of Echo's height, with soft tan fur, big round pink ears, a long thin tail, big friendly eyes and small pink cheeks. The place in this story is Lola's lemonade stand in the little park at the top of a grassy hill: a small wooden stand painted soft sky blue with a striped yellow-and-white cloth roof, a wooden counter with a big woven basket and a tall glass jug, and paper cups stacked on it, beside a tall round leafy lemon tree; a leafy lane with round trees and flowers winds up the hill to it, and a smooth green lawn rolls down the far side of the hill to a hollow fallen log at the bottom. The lemons are bright, shiny yellow, each about a third as tall as Echo. The stand has no sign: no writing, letters or numbers on the stand, the cups, the jug or anywhere.",
+      "who": {
+        "LOLA": {
+          "re": "\\bLola\\b",
+          "label": "Lola the llama"
+        },
+        "LIZARD": {
+          "re": "\\blizard\\b",
+          "label": "the sleepy lizard"
+        },
+        "FRIENDS": {
+          "re": "\\bfriends\\b|\\bbunny\\b|\\bhedgehog\\b|\\bmouse\\b",
+          "label": "the three park friends"
+        }
+      },
+      "home": "A wide picture for a game card. In a sunny little park on a green hilltop, beside the sky-blue lemonade stand with its striped yellow-and-white roof and a basket full of shiny yellow lemons on its counter, Lola the llama in her sunny-yellow scarf holds up a big glass of lemonade in her front hoof, just right of the middle, beaming. Echo hops up beside her just left of the middle, wings up, cheering. Echo, Lola and the glass are all in the middle band of the picture: their tops below 25% from the top and their bottoms above 75% from the top. Only Echo and Lola appear: no other characters. No writing anywhere, and no sign on the stand.",
+      "chars": [
+        {
+          "key": "lola",
+          "h": 2,
+          "prompt": "Lola the llama, full body, standing on her four slim legs, facing forward, head tilted a little and smiling: a young, friendly clay llama with soft, fluffy cream-white wool, a long fluffy neck, a round fluffy topknot of wool on her head, two tall banana-shaped ears, big shiny dark friendly eyes with long lashes, small pink cheeks, a gentle smiling mouth, small dark hooves, a short fluffy tail, and a sunny-yellow knitted scarf with little white pom-poms; no hat, no other clothes."
+        },
+        {
+          "key": "lizard",
+          "h": 0.5,
+          "prompt": "A little sleepy clay lizard, full body, lying low on his four short legs, facing forward, yawning happily: smooth leaf-green skin with a pale lime tummy, a row of tiny round darker-green spots down his back, a long curly tail, big sleepy friendly eyes, small pink cheeks and a wide happy mouth."
+        },
+        {
+          "key": "bunny",
+          "h": 1,
+          "prompt": "A little clay bunny, full body, standing, facing forward, waving one paw and smiling: soft grey fur, long ears, a white fluffy tail, big friendly eyes and small pink cheeks."
+        },
+        {
+          "key": "hedgehog",
+          "h": 0.67,
+          "prompt": "A little round clay hedgehog, full body, standing, facing forward, smiling: soft brown spines, a cream face, a little black nose, big friendly eyes and small pink cheeks."
+        },
+        {
+          "key": "mouse",
+          "h": 0.5,
+          "prompt": "A tiny clay mouse, full body, standing up on her back legs, facing forward, waving and smiling: soft tan fur, big round pink ears, a long thin tail, big friendly eyes and small pink cheeks."
+        }
+      ],
+      "scenes": {
+        "s01": {
+          "light": "day",
+          "picture": "A bright sunny morning at the round blue front door of Echo's cottage (ECHO'S COTTAGE, exactly as in the attached earlier picture). Pelly the pelican stands on the left of the door and proudly pulls a giant lollipop (a big round flat swirl of rainbow candy, pink, yellow and blue, on a long white stick) out of her beak pouch, the lollipop balanced on the tip of her bill as if it were a letter, looking very pleased with herself. Echo stands just right of the middle on the wide doorstep, laughing, wings up.",
+          "also": [
+            "file:public/assets/adventure/lighthouse/s01.webp"
+          ]
+        },
+        "s02": {
+          "light": "day",
+          "picture": "Close up on the porch of Echo's cottage on a sunny morning. Pelly the pelican's big white wing (only her wing and the edge of her body, from the left edge) holds out a cream paper letter in the upper middle of the picture. On the letter is a child's crayon drawing of a smiling cream llama in a yellow scarf beside a little blue stand with a striped roof, and round yellow lemons rolling away down a green hill toward the edge of the paper with little curly crayon lines behind them, with a big round crayon sun: only crayon lines, no writing at all. Echo stands just left of the middle, leaning in toward the letter, eyes wide with excitement, the giant rainbow lollipop on its long white stick lying on the porch beside him.",
+          "also": [
+            "file:public/assets/adventure/lighthouse/s02.webp"
+          ]
+        },
+        "s03": {
+          "light": "day",
+          "picture": "A bright sunny morning on a leafy lane that winds up a grassy hill between round leafy trees and little flowers, a big round friendly sun high in the clear blue sky. At the top of the hill, small in the distance, a little sky-blue stand with a striped yellow-and-white roof stands beside a tall round tree. Echo hurries up the lane in the lower middle, wings out, happy and excited, little puffs of dust behind him. No one else is in the picture."
+        },
+        "s04": {
+          "light": "day",
+          "picture": "In the little park at the top of the hill on a sunny morning: the sky-blue lemonade stand with its striped yellow-and-white cloth roof, its wooden counter holding a tall empty glass jug, a stack of paper cups and a big woven basket that is completely empty, with nothing inside it. Lola the llama stands beside the stand on the left in her sunny-yellow scarf, peeking into the empty basket with her head tilted, puzzled and silly, not sad. Echo stands on the right, wings up, surprised. There are no lemons anywhere in the picture: not in the basket, not on the counter, not on the grass, not on the tree beside the stand. The lemons are missing. No sign and no writing anywhere."
+        },
+        "s05": {
+          "light": "day",
+          "picture": "On the far side of the hilltop park on a sunny morning, looking down a smooth green lawn that rolls gently down the hill. A few shiny yellow lemons sit here and there on the lawn, and a trail of them leads on down the slope toward the bottom of the hill, with little curvy motion lines behind the lowest ones as they roll. Echo bends low over a lemon on the lawn in the lower middle, pointing at it, eyes wide. Lola the llama stands beside him on the left in her sunny-yellow scarf, her long neck stretched to look down the hill, excited."
+        },
+        "s06": {
+          "light": "day",
+          "picture": "Beside a tall round leafy tree on the green hillside on a sunny morning. A few shiny yellow lemons are caught among the leaves high up in the tree, peeking out. A wooden ladder leans against the trunk, and Echo climbs it carefully, one rung at a time, halfway up, reaching one wing toward a lemon, smiling. Lola the llama stands at the bottom of the ladder on the left in her sunny-yellow scarf, holding it steady with her front hooves and looking up, cheering him on."
+        },
+        "s07": {
+          "light": "day",
+          "picture": "At the bottom of the green hill on a sunny morning, beside a big hollow fallen log lying on the grass, its round open end facing us. Inside the open end of the log, a little sleepy lizard lies curled up happily, his chin resting on a shiny yellow lemon as if it were a pillow, his eyes half closed, smiling, with two more yellow lemons beside him in the log. Echo stands on the left, laughing, wings up. Lola the llama stands on the right in her sunny-yellow scarf, giggling, her head bent down to peek into the log."
+        },
+        "s08": {
+          "light": "day",
+          "picture": "Back at the sky-blue lemonade stand on the sunny hilltop. The big woven basket on the counter is full of shiny yellow lemons. Lola the llama stands behind the counter in the middle in her sunny-yellow scarf, stirring a tall glass jug full of pale yellow lemonade with a long wooden spoon, beaming, a few lemon halves beside the jug. Echo stands on the counter's left end, squeezing half a lemon with both wings, a little splash of juice in the air. The little sleepy lizard sits on the grass at the front right, yawning happily. No sign and no writing anywhere."
+        },
+        "e01": {
+          "light": "day",
+          "picture": "The lemonade stand is open on the sunny hilltop. Lola the llama stands behind the counter of the sky-blue stand with the striped yellow-and-white roof on the left, in her sunny-yellow scarf, holding out a paper cup of lemonade, smiling. In front of the stand, three park friends wait in one long, neat line on the grass, one behind another and each easy to see: the little bunny at the front, then the little hedgehog, then the tiny mouse, all smiling and excited. Echo stands at the end of the line on the right, wings up, cheering. No sign and no writing anywhere."
+        },
+        "e02": {
+          "light": "afternoon",
+          "picture": "At the sky-blue lemonade stand on a warm, sunny afternoon. On the wooden counter stands a neat row of paper cups of pale yellow lemonade, each with one little bright green leaf on top. Lola the llama, behind the counter in her sunny-yellow scarf, carefully places one little green leaf on the top of the last cup with her lips, smiling. On the counter's right end, the little sleepy lizard holds a tiny cup of lemonade with a tiny green leaf on top, grinning. Echo, the little bunny, the little hedgehog and the tiny mouse stand in front of the stand, each holding a cup with a leaf on top, beaming. No writing anywhere."
+        },
+        "e03": {
+          "light": "afternoon",
+          "picture": "On the grassy hilltop beside the lemonade stand on a warm late afternoon. Lola the llama, in her sunny-yellow scarf, takes a big sip from a paper cup of lemonade through a striped straw and starts to laugh, her eyes squeezed shut, her nose crinkled, with little curvy laugh lines and a few tiny bubbles around her nose. Around her, Echo, the little bunny, the little hedgehog, the tiny mouse and the little lizard laugh too, holding their cups, wings and paws up. No writing anywhere."
+        },
+        "e04": {
+          "light": "evening",
+          "picture": "Evening inside Echo's cozy round cottage, lamp-lit: the whole helper map (THE HELPER MAP, the same map as in the attached earlier picture, seen whole as it is there, with its frame and its four brass pins in view) pinned to the wall, filling the upper middle of the picture, with no writing anywhere on it. Most of the map is still covered by soft white puffy clouds. One soft white cloud has just drifted off to one side, uncovering a new place: a tiny green hilltop with a tiny sky-blue stand with a striped yellow roof beside a tiny round tree. There is NO star of any kind on the map or anywhere else in the picture, except the ONE new gold star Echo is pressing on. A low wooden bench stands under the map, a little left of the middle; Echo stands on the bench, on tiptoe, pressing ONE new shiny gold star sticker onto the tiny lemonade stand with one wing, beaming. A small shiny yellow lemon rests on the bench beside him. Just right of the bench, below the map and well inside the picture (not at its edge), a big round window shows the sunset outside, big and easy to see: a glowing peach, pink and lilac sky with the round orange sun sinking low on the far horizon. Plain wooden floor below.",
+          "also": [
+            "file:design/adventure/refs/ref-map.webp"
+          ]
+        }
+      }
+    },
+    {
+      "id": "zola",
+      "light": "day",
+      "lineups": [
+        "zola"
+      ],
+      "talk": true,
+      "bible": "PELLY: Pelly the pelican, a big white clay pelican (a real pelican, not a duck) with a very long, straight peach-orange bill, longer than her head, and a big, soft, lumpy peach pouch hanging under it, a small round light-blue postal cap with a little white envelope badge (no anchor), no scarf, and a brown leather mail satchel across her body; about twice Echo's height. ZOLA: Zola the koala, a young, round, cuddly clay koala (a girl) about one and a half times Echo's height, standing upright on her two back feet: soft silvery-grey fur with a pale cream tummy, big round fluffy ears with white fur inside, a large, smooth, oval black nose, big shiny dark friendly eyes, small pink cheeks, short arms with little paws, and a little sunny-yellow pilot's scarf tied around her neck with its ends fluttering; no hat, no goggles, no other clothes; never scary. GOAT: Zola's friend, a zany little clay goat (a girl) about one and a quarter times Echo's height, standing on four thin legs: fluffy snow-white fur, two tiny curved cream horns, long floppy ears, a little white chin beard, a pink nose, big goofy friendly eyes, small pink cheeks, a short perky tail, and a little lilac bell on a ribbon around her neck. The place in this story is Zola's flower meadow on a little farm: soft rolling green hills covered in bright zinnias (round, many-petalled flowers in pink, red, yellow and orange on tall green stems), a little red barn with a white door in the distance, and a winding dirt farm path that runs past a vegetable garden full of giant, glossy dark-green zucchini lying under big leaves. Zola's zeppelin is a little, chubby, rounded clay airship shaped like a fat egg lying on its side, painted soft sky-blue with one wide sunny-yellow band around its middle, about four times Echo's length when full; along its top, from front to back, runs one big, chunky golden zipper with a big round golden pull tab; a cozy round wicker basket, big enough for three small friends, hangs under it on four ropes; a small round wooden propeller sits at its back, and in the basket is a little wooden steering wheel. When it is full it floats and is held down by three ropes tied to little wooden pegs in the grass; when it is flat it lies on the grass like a big, crumpled, droopy blue blanket. Beside it stands a big wooden foot pump with a step on top that goes up and down, joined to the zeppelin by a long, soft green hose. No writing, letters or numbers anywhere: not on the zeppelin, the barn, the basket or the pump.",
+      "who": {
+        "ZOLA": {
+          "re": "\\bZola\\b",
+          "label": "Zola the koala"
+        },
+        "GOAT": {
+          "re": "\\bgoat\\b",
+          "label": "the zany little goat"
+        }
+      },
+      "home": "A wide picture for a game card. In a sunny green meadow full of bright pink, red and yellow zinnias, Zola the koala in her sunny-yellow scarf stands just right of the middle, waving happily up at her little sky-blue zeppelin with its yellow band, which floats small and high in the clear blue sky behind her on the right, its wicker basket empty. Echo leaps up beside her just left of the middle, wings up, cheering. Echo and Zola are both in the middle band of the picture: their tops below 25% from the top and their bottoms above 75% from the top. Only Echo and Zola appear: no other characters.",
+      "chars": [
+        {
+          "key": "zola",
+          "h": 1.5,
+          "prompt": "Zola the koala, full body, standing upright on her two back feet, facing forward, waving one paw and smiling: a young, round, cuddly clay koala (a girl) about one and a half times Echo's height, standing upright on her two back feet: soft silvery-grey fur with a pale cream tummy, big round fluffy ears with white fur inside, a large, smooth, oval black nose, big shiny dark friendly eyes, small pink cheeks, short arms with little paws, and a little sunny-yellow pilot's scarf tied around her neck with its ends fluttering; no hat, no goggles, no other clothes."
+        },
+        {
+          "key": "goat",
+          "h": 1.25,
+          "prompt": "A zany little clay goat, full body, standing on her four thin legs, facing forward, one front hoof lifted in a happy little hop, smiling: fluffy snow-white fur, two tiny curved cream horns, long floppy ears, a little white chin beard, a pink nose, big goofy friendly eyes, small pink cheeks, a short perky tail, and a little lilac bell on a ribbon around her neck."
+        }
+      ],
+      "scenes": {
+        "s01": {
+          "light": "day",
+          "picture": "A bright sunny morning at the round blue front door of Echo's cottage (ECHO'S COTTAGE, exactly as in the attached earlier picture). Pelly the pelican stands on the left of the door and proudly pulls a little plush toy zebra (soft and cuddly, with bold black-and-white stripes, a fluffy black mane, a little tufty tail and a sweet stitched smile) out of her beak pouch, the toy zebra balanced on the tip of her bill as if it were a letter, looking very pleased with herself. Echo stands just right of the middle on the wide doorstep, laughing, wings up.",
+          "also": [
+            "file:public/assets/adventure/lighthouse/s01.webp"
+          ]
+        },
+        "s02": {
+          "light": "day",
+          "picture": "Close up on the porch of Echo's cottage on a sunny morning. Pelly the pelican's big white wing (only her wing and the edge of her body, from the left edge) holds out a cream paper letter in the upper middle of the picture. On the letter is a child's crayon drawing of a smiling grey koala standing beside a droopy, crumpled blue airship lying flat on green grass among round pink flowers, with a big round crayon sun: only crayon lines, no writing at all. Echo stands just left of the middle, leaning in toward the letter, eyes wide with excitement, the little plush toy zebra with its black-and-white stripes sitting on the porch beside him.",
+          "also": [
+            "file:public/assets/adventure/lighthouse/s02.webp"
+          ]
+        },
+        "s03": {
+          "light": "day",
+          "picture": "A bright sunny morning on the little farm. A winding dirt farm path runs through the lower middle of the picture, past a vegetable garden on the left full of giant, glossy dark-green zucchini lying under big green leaves, each zucchini bigger than Echo. Ahead, past the garden, soft green hills covered in bright pink, red and yellow zinnias roll away toward a little red barn in the distance, and on the nearest hill something sky-blue lies crumpled flat on the grass. Echo hurries along the path past the zucchini, wings out, happy and excited, little puffs of dust behind him. No one else is in the picture."
+        },
+        "s04": {
+          "light": "day",
+          "picture": "In Zola's flower meadow on a sunny morning, among bright pink, red and yellow zinnias. In the middle of the picture Zola's little sky-blue zeppelin with its yellow band lies flat and crumpled on the grass like a big droopy blue blanket, its wicker basket tipped on its side beside it. Along its top, the big chunky golden zipper hangs wide open in one long gap, its big round golden pull tab lying at one end, and a few soft little puffs of air drift out of the gap. Zola the koala stands on the left in her sunny-yellow scarf, both paws on her cheeks, puzzled and silly, not sad. Echo stands on the right, wings up, surprised, pointing at the open zipper."
+        },
+        "s05": {
+          "light": "day",
+          "picture": "In Zola's flower meadow on a sunny morning, among bright zinnias. The little sky-blue zeppelin still lies soft and droopy on the grass, but now its big chunky golden zipper is closed all the way along its top. Echo has just pulled the big round golden pull tab right to the end, holding it up with both wings, beaming, with a long, curvy swoosh of motion lines along the closed zipper behind him to show the zip. Zola the koala stands beside him on the left, clapping her paws, delighted. Next to the zeppelin stands the big wooden foot pump, its long soft green hose joined to the zeppelin."
+        },
+        "s06": {
+          "light": "day",
+          "picture": "In Zola's flower meadow on a sunny morning. A zany little goat with fluffy snow-white fur and a lilac bell hops high off the step of the big wooden foot pump in the middle of the picture, all four legs in the air, goofy and happy, with a few little curvy bounce lines under her. A little puff of air travels along the long soft green hose into the little sky-blue zeppelin, which is now half full: puffing up, rounder, lifting off the grass a little, its golden zipper closed tight along its top. Echo stands on the left, laughing, wings up. Zola the koala stands on the right, cheering, both paws up."
+        },
+        "s07": {
+          "light": "day",
+          "picture": "In Zola's flower meadow on a sunny morning. The little sky-blue zeppelin with its yellow band is big and round now, its golden zipper closed along its top, and it floats up just above a field of bright pink, red and yellow zinnias in the lower part of the picture, tugging at its three ropes, which are tied to little wooden pegs in the grass; its wicker basket hangs just above the flowers. Echo, Zola the koala and the zany little goat stand among the zinnias below it, side by side and easy to see, looking up, cheering, wings, paws and a hoof in the air."
+        },
+        "s08": {
+          "light": "day",
+          "picture": "Over Zola's flower meadow on a sunny morning. The little sky-blue zeppelin zooms up into the clear blue sky in the middle of the picture, tilted a little upward, with a big soft whoosh of curvy motion lines behind it, its small wooden propeller spinning at its back in a soft round blur. In its round wicker basket, Zola the koala turns the little wooden steering wheel, and Echo and the zany little goat peek over the basket's edge beside her, all three faces clearly visible and beaming. Far below, the ropes hang loose and the meadow of bright zinnias and the little red barn get smaller."
+        },
+        "e01": {
+          "light": "day",
+          "picture": "High in a bright blue sky on a sunny day. The little sky-blue zeppelin, with Echo, Zola the koala and the zany little goat waving from its round wicker basket, weaves between three big fluffy white clouds, and a long soft dotted trail behind it shows its zigzag path: one sharp zigzag, this way and that way, around the clouds. Everyone is laughing and having fun."
+        },
+        "e02": {
+          "light": "day",
+          "picture": "Looking down from the little sky-blue zeppelin on a sunny day. In the lower part of the picture, far below, is a tiny, friendly clay zoo with no cages and no bars: green lawns, a little blue pond and leafy round trees, where two tall giraffes and two grey elephants look up and wave hello with a hoof and a trunk. In the upper part of the picture, the edge of the round wicker basket, with Echo, Zola the koala and the zany little goat leaning over it side by side, waving back down, each happy face easy to see. No writing or signs anywhere in the zoo."
+        },
+        "e03": {
+          "light": "afternoon",
+          "picture": "Back in Zola's flower meadow in the warm late afternoon. The little sky-blue zeppelin has landed softly on the grass among the bright zinnias behind them, round and full, tied to its pegs again. In front of it, in the middle of the picture, Zola the koala wraps her arms around Echo and the zany little goat in one big, squishy, happy hug, with lots of little pink hearts floating up around them, everyone beaming, eyes closed with joy."
+        },
+        "e04": {
+          "light": "evening",
+          "picture": "Evening inside Echo's cozy round cottage, lamp-lit: the whole helper map (THE HELPER MAP, the same map as in the attached earlier picture, seen whole as it is there, with its frame and its four brass pins in view) pinned to the wall, filling the upper middle of the picture, with no writing anywhere on it. Most of the map is still covered by soft white puffy clouds. One soft white cloud has just drifted off to one side, uncovering a new place: a tiny green hill of pink flowers with a tiny red barn and a tiny sky-blue zeppelin floating above it. There is NO star of any kind on the map or anywhere else in the picture, except the ONE new gold star Echo is pressing on. A low wooden bench stands under the map, a little left of the middle; Echo stands on the bench, on tiptoe, pressing ONE new shiny gold star sticker onto the tiny flower hill with one wing, beaming. On the bench beside him stands a little glass jar of water holding one big pink zinnia flower, its round many-petalled bloom easy to see. Just right of the bench, below the map and well inside the picture (not at its edge), a big round window shows the soft lilac evening sky outside. Plain wooden floor below.",
+          "also": [
+            "file:design/adventure/refs/ref-map.webp"
+          ]
+        }
+      }
+    },
+    {
+      "id": "felix",
+      "light": "day",
+      "lineups": [
+        "felix"
+      ],
+      "talk": true,
+      "bible": "PELLY: Pelly the pelican, a big white clay pelican (a real pelican, not a duck) with a very long, straight peach-orange bill, longer than her head, and a big, soft, lumpy peach pouch hanging under it, a small round light-blue postal cap with a little white envelope badge (no anchor), no scarf, and a brown leather mail satchel across her body; about twice Echo's height. FELIX: Felix the ferret, a young, friendly clay ferret (a boy) with a long, slim, bendy body, about one and a quarter times Echo's height when he stands up on his back legs, which he often does; he also scampers on all four short legs: soft sandy-cream fur, a darker chocolate-brown mask across his eyes like a little bandit's mask, a pale cream face and chin, small round ears, a small pink nose, long white whiskers, big shiny dark friendly eyes, small pink cheeks, four small brown paws and a long, fluffy, chocolate-brown tail, and a small red-and-white striped bow tie; no other clothes, no hat. GOAT: the granny goat, a kind, cheerful old clay granny goat (a girl) about one and three quarter times Echo's height, standing up on her back legs: soft fluffy white fur, two small curved cream horns, floppy white ears, a little white beard on her chin, big friendly eyes behind small round gold glasses, small pink cheeks, little grey hooves, and a soft lavender knitted shawl over her shoulders; she loves to knit, with two long wooden knitting needles and a round wicker basket of soft balls of yarn. The place in this story is Felix's fun fair on a grassy green hill beside a little farm: at the top of the hill stands a small, friendly Ferris wheel made of painted wood, about six times Echo's height, with six round open seats like little cups in soft pastel colors (mint, pink, lemon, lilac, sky blue and peach), a string of little round light bulbs around its rim, and at its bottom, low on the grass, two big round wooden gears that turn it; around it stand two small striped tents (red-and-white and blue-and-white), strings of little triangle bunting in soft colors, and soft green grass. At the foot of the hill a country lane winds past the farm: a red barn with a white-trimmed door, a wooden fence and a golden field. The long scarf is one very, very long, soft, fuzzy knitted scarf with wide teal and lemon-yellow stripes. No tent, flag, seat, barn, scarf or anything else has any writing, letter, number or sign on it.",
+      "who": {
+        "FELIX": {
+          "re": "\\bFelix\\b",
+          "label": "Felix the ferret"
+        },
+        "GOAT": {
+          "re": "\\bgoat\\b",
+          "label": "the granny goat"
+        }
+      },
+      "home": "A wide picture for a game card. At a sunny fun fair on a grassy green hill, the small wooden Ferris wheel with its pastel cup seats and little round lights turning behind, with striped tents and soft-colored bunting, Felix the ferret in his striped bow tie stands up on his back legs just right of the middle, waving both front paws, beaming. Echo leaps up beside him just left of the middle, wings up, cheering. Echo and Felix are both in the middle band of the picture: their tops below 25% from the top and their bottoms above 75% from the top. Only Echo and Felix appear: no other characters.",
+      "chars": [
+        {
+          "key": "felix",
+          "h": 1.25,
+          "prompt": "Felix the ferret, full body, standing up on his back legs, facing forward, waving one front paw and smiling: a young, friendly clay ferret (a boy) with a long, slim, bendy body, about one and a quarter times Echo's height when he stands up on his back legs, which he often does; he also scampers on all four short legs: soft sandy-cream fur, a darker chocolate-brown mask across his eyes like a little bandit's mask, a pale cream face and chin, small round ears, a small pink nose, long white whiskers, big shiny dark friendly eyes, small pink cheeks, four small brown paws and a long, fluffy, chocolate-brown tail, and a small red-and-white striped bow tie; no other clothes, no hat."
+        },
+        {
+          "key": "goat",
+          "h": 1.75,
+          "prompt": "A granny goat, full body, standing up on her back legs, facing forward, holding two long wooden knitting needles with a little piece of teal knitting on them, smiling: a kind, cheerful old clay granny goat (a girl) about one and three quarter times Echo's height, standing up on her back legs: soft fluffy white fur, two small curved cream horns, floppy white ears, a little white beard on her chin, big friendly eyes behind small round gold glasses, small pink cheeks, little grey hooves, and a soft lavender knitted shawl over her shoulders."
+        }
+      ],
+      "scenes": {
+        "s01": {
+          "light": "day",
+          "picture": "A bright sunny morning at the round blue front door of Echo's cottage (ECHO'S COTTAGE, exactly as in the attached earlier picture). Pelly the pelican stands on the left of the door and proudly pulls a big shiny silver kitchen funnel (a wide cone with a short narrow spout at its tip) out of her beak pouch, the funnel balanced upside down on the tip of her bill like a pointy hat, looking very pleased with herself. Echo stands just right of the middle on the wide doorstep, laughing, wings up.",
+          "also": [
+            "file:public/assets/adventure/lighthouse/s01.webp"
+          ]
+        },
+        "s02": {
+          "light": "day",
+          "picture": "Close up on the porch of Echo's cottage on a sunny morning. Pelly the pelican's big white wing (only her wing and the edge of her body, from the left edge) holds out a cream paper letter in the upper middle of the picture. On the letter is a child's crayon drawing of a smiling sandy-brown ferret with a dark mask beside a big round wheel with little cup seats on a green hill, the wheel tangled up in a messy scribble of teal and yellow crayon loops, with a big round crayon sun: only crayon lines, no writing at all. Echo stands just left of the middle, leaning in toward the letter, eyes wide with excitement, the big shiny silver funnel lying on the porch beside him.",
+          "also": [
+            "file:public/assets/adventure/lighthouse/s02.webp"
+          ]
+        },
+        "s03": {
+          "light": "day",
+          "picture": "A bright sunny morning in the countryside, a big round friendly sun shining high in the clear blue sky. A winding country lane runs past a little farm: a red barn with a white-trimmed door, a wooden fence and a golden field. Ahead, at the top of a grassy green hill, the small wooden Ferris wheel and two little striped tents of the fair can be seen, with strings of soft-colored bunting. Echo hurries along the lane in the lower middle, wings out, happy and excited, little puffs of dust behind him. No one else is in the picture."
+        },
+        "s04": {
+          "light": "day",
+          "picture": "At the fun fair on the grassy hill on a sunny morning. The small wooden Ferris wheel stands tall in the middle behind, completely still, its six pastel cup seats all empty and hanging quietly; the bottom of the wheel, where its gears are, is hidden behind a low red-and-white striped tent in front of it. Strings of soft-colored bunting flutter between the tents. Felix the ferret stands up on his back legs on the left in his striped bow tie, both front paws on his cheeks, puzzled and silly, not sad, looking up at the still wheel. Echo stands on the right, wings up, surprised, looking up too."
+        },
+        "s05": {
+          "light": "day",
+          "picture": "Close up at the bottom of the small wooden Ferris wheel on the grassy hill on a sunny morning: its two big round wooden gears sit low on the grass, and one very long, fuzzy knitted scarf with wide teal and lemon-yellow stripes is wound round and round and all tangled up in the gears, so they cannot turn. The rest of the scarf trails away from the gears across the grass and off down the hill toward the right edge of the picture. Echo stands in the lower middle pointing one wing at the tangled fuzzy scarf, eyes wide. Felix the ferret stands up beside him on the left, peeking at the gears with his paws on his knees, curious."
+        },
+        "s06": {
+          "light": "day",
+          "picture": "On the sunny grassy hillside below the fair. The long fuzzy teal-and-yellow striped scarf runs in a long, wiggly line down the hill across the grass from the top left of the picture, all the way to its other end at the lower right, where a kind old granny goat in round gold glasses and a lavender shawl sits on a little wooden bench under a round leafy tree, happily knitting the end of the scarf with two long wooden knitting needles, her round wicker basket of yarn beside her, not looking up. Echo walks along beside the scarf in the middle of the picture, following it, holding a bit of it in one wing, and Felix the ferret scampers on all fours just behind him, his long tail up, eyes wide and curious."
+        },
+        "s07": {
+          "light": "day",
+          "picture": "Under the round leafy tree on the sunny grassy hillside, beside the little wooden bench. The granny goat in her round gold glasses and lavender shawl laughs a big happy laugh, one hoof on her cheek, holding her knitting needles. Echo and Felix the ferret stand on the grass in the middle, each holding one side of the long fuzzy teal-and-yellow striped scarf, folding it up together into a neat, soft, tidy pile of folds on the grass between them. A round ball of teal yarn sits safely in the wicker basket by the bench. Everyone is smiling."
+        },
+        "s08": {
+          "light": "day",
+          "picture": "At the bottom of the small wooden Ferris wheel on the grassy hill on a sunny day, the big wooden gears now clear and free, with no scarf anywhere near them. Echo, Felix the ferret and the granny goat stand side by side on the grass and push one of the wheel's low wooden spokes together with their wings, paws and hooves, leaning in with happy, determined faces. The wheel is starting to turn, faster and faster: big soft curvy motion lines swirl around its rim and its six pastel cup seats swing. All three are easy to see: nobody is in front of anybody."
+        },
+        "e01": {
+          "light": "dusk",
+          "picture": "The fun fair on the grassy hill in the soft glow of early evening. In the middle of the picture the small wooden Ferris wheel spins round and round, with soft curvy motion lines around it, and the string of little round light bulbs around its rim glows warm and yellow, twinkling on. The striped tents and soft-colored bunting stand around it. Below, on the grass, Echo, Felix the ferret and the granny goat cheer, wings, paws and hooves up, beaming."
+        },
+        "e02": {
+          "light": "sunset",
+          "picture": "High up at the very top of the small wooden Ferris wheel at sunset. Echo, Felix the ferret and the granny goat sit together in one round pastel mint cup seat, each happily nibbling a small square of soft brown fudge from a little round plate the granny goat holds on her lap. Below and far away lie the grassy hill, the striped tents, the red barn of the farm and the golden field, all small, under a glowing peach and pink sky. Everyone is smiling."
+        },
+        "e03": {
+          "light": "sunset",
+          "picture": "On the grass beside the small wooden Ferris wheel at sunset, its little round lights glowing warm. The granny goat in her round gold glasses and lavender shawl holds out a funny little knitted hat with wide teal and lemon-yellow stripes and a big fluffy yellow pom-pom on top, giving it to Echo, who reaches up with both wings, delighted. Felix the ferret stands up on his back legs beside them and waves, smiling."
+        },
+        "e04": {
+          "light": "evening",
+          "picture": "Evening inside Echo's cozy round cottage, lamp-lit: the whole helper map (THE HELPER MAP, the same map as in the attached earlier picture, seen whole as it is there, with its frame and its four brass pins in view) pinned to the wall, filling the upper middle of the picture, with no writing anywhere on it. Most of the map is still covered by soft white puffy clouds. One soft white cloud has just drifted off to one side, uncovering a new place: a tiny green hill with a tiny wooden Ferris wheel and a tiny striped tent on top. There is NO star of any kind on the map or anywhere else in the picture, except the ONE new gold star Echo is pressing on. A low wooden bench stands under the map, a little left of the middle; Echo stands on the bench, on tiptoe, pressing ONE new shiny gold star sticker onto the tiny Ferris wheel with one wing, beaming. A funny little knitted hat with wide teal and lemon-yellow stripes and a fluffy yellow pom-pom rests on the bench beside him. Just right of the bench, below the map and well inside the picture (not at its edge), a big round window shows the evening sky outside, a soft lilac and deep blue with the first twinkle of the moon low on the horizon. Plain wooden floor below.",
+          "also": [
+            "file:design/adventure/refs/ref-map.webp"
+          ]
+        }
+      }
+    },
+    {
+      "id": "coco",
+      "light": "day",
+      "lineups": [
+        "coco"
+      ],
+      "talk": true,
+      "bible": "PELLY: Pelly the pelican, a big white clay pelican (a real pelican, not a duck) with a very long, straight peach-orange bill, longer than her head, and a big, soft, lumpy peach pouch hanging under it, a small round light-blue postal cap with a little white envelope badge (no anchor), no scarf, and a brown leather mail satchel across her body; about twice Echo's height. COCO: Coco the kangaroo, a young, friendly clay kangaroo (a girl) about one and a half times Echo's height when she stands up on her big back feet: soft warm sandy-tan fur, a pale cream tummy with a little front pouch, two tall rounded ears with pink insides, big shiny dark friendly eyes, a round dark-brown nose, small pink cheeks, short front paws, big flat back feet, a long thick tail, and a little lilac bow on top of her head; no clothes, no hat; she hops, and she looks after the carousel. COCKATOO: a silly little clay cockatoo (a girl) about Echo's height: fluffy white feathers, a tall curly sunny-yellow crest on her head, a short curved grey beak, big goofy friendly eyes, small pink cheeks and little grey feet. CAT: a curious little clay cat (a boy) about Echo's height: soft striped ginger-and-cream fur, pointy ears with pink insides, big round green friendly eyes, a small pink nose, white whiskers, small pink cheeks, white paws and a long striped tail. The place in this story is the carnival on the hill: a sunny grassy hilltop with a few round leafy trees and a winding path up to it, and on top a little clay carnival: two small striped tents (pink-and-white and teal-and-white) with little triangle flags on strings between them, a candy stand with a striped awning and fluffy pink cotton candy on sticks, a little red popcorn cart on wheels with a glass box of popcorn, a small pastel Ferris wheel with round gondolas, and in the middle the carousel: a round carousel with a pink-and-cream striped canopy and a tall golden pole in its center, with painted wooden carousel animals on golden poles (a white horse, a lilac horse, a spotted cow, a white swan and a camel with a bright blue saddle). Low on the center pole is a round brass keyhole, and the carousel's key is a big shiny brass wind-up key, about half as tall as Echo, with a round loop handle. No tent, stand, cart, sign, flag or carousel has any writing, letter or number on it.",
+      "who": {
+        "COCO": {
+          "re": "\\bCoco\\b",
+          "label": "Coco the kangaroo"
+        },
+        "COCKATOO": {
+          "re": "\\bcockatoo\\b",
+          "label": "the silly cockatoo"
+        },
+        "CAT": {
+          "re": "\\bcat\\b",
+          "label": "the curious cat"
+        }
+      },
+      "home": "A wide picture for a game card. At the little carnival on a sunny grassy hilltop, the round carousel with its pink-and-cream striped canopy and painted animals turning behind, Coco the kangaroo in her little lilac bow hops up high with joy just right of the middle, holding the big shiny brass carousel key up in one paw, beaming. Echo leaps up beside her just left of the middle, wings up, cheering. Echo, Coco and the key are all in the middle band of the picture: their tops below 25% from the top and their bottoms above 75% from the top. Only Echo and Coco appear: no other characters. No writing anywhere.",
+      "chars": [
+        {
+          "key": "coco",
+          "h": 1.5,
+          "prompt": "Coco the kangaroo, full body, standing up on her big back feet, facing forward, waving one front paw and smiling: a young, friendly clay kangaroo (a girl) about one and a half times Echo's height when she stands up on her big back feet: soft warm sandy-tan fur, a pale cream tummy with a little front pouch, two tall rounded ears with pink insides, big shiny dark friendly eyes, a round dark-brown nose, small pink cheeks, short front paws, big flat back feet, a long thick tail, and a little lilac bow on top of her head; no clothes, no hat."
+        },
+        {
+          "key": "cockatoo",
+          "h": 1,
+          "prompt": "A silly little clay cockatoo, full body, standing, facing forward, one wing up in a wave, smiling: fluffy white feathers, a tall curly sunny-yellow crest on her head, a short curved grey beak, big goofy friendly eyes, small pink cheeks and little grey feet."
+        },
+        {
+          "key": "cat",
+          "h": 1,
+          "prompt": "A curious little clay cat, full body, sitting up, facing forward, one paw raised, smiling: soft striped ginger-and-cream fur, pointy ears with pink insides, big round green friendly eyes, a small pink nose, white whiskers, small pink cheeks, white paws and a long striped tail."
+        }
+      ],
+      "scenes": {
+        "s01": {
+          "light": "day",
+          "picture": "A bright sunny morning at the round blue front door of Echo's cottage (ECHO'S COTTAGE, exactly as in the attached earlier picture). Pelly the pelican stands on the left of the door and proudly pulls a tiny green cactus in a little terracotta pot (a round, friendly cactus with soft little spines and one small pink flower on top) out of her beak pouch, the pot balanced on the tip of her bill as if it were a letter, looking very pleased with herself. Echo stands just right of the middle on the wide doorstep, laughing, wings up.",
+          "also": [
+            "file:public/assets/adventure/lighthouse/s01.webp"
+          ]
+        },
+        "s02": {
+          "light": "day",
+          "picture": "Close up on the porch of Echo's cottage on a sunny morning. Pelly the pelican's big white wing (only her wing and the edge of her body, from the left edge) holds out a cream paper letter in the upper middle of the picture. On the letter is a child's crayon drawing of a smiling tan kangaroo with a lilac bow standing beside a round striped carousel that is standing still, and a big brass key with a round loop handle drawn far away near the edge of the paper with little curly crayon lines around it, with a big round crayon sun: only crayon lines, no writing at all. Echo stands just left of the middle, leaning in toward the letter, eyes wide with excitement, the tiny cactus in its little terracotta pot on the porch beside him.",
+          "also": [
+            "file:public/assets/adventure/lighthouse/s02.webp"
+          ]
+        },
+        "s03": {
+          "light": "day",
+          "picture": "A bright sunny morning on a green grassy hill. A winding path runs up the hill between round leafy trees, and at the top, ahead, stands the little carnival: two small striped tents with little triangle flags on strings between them, a small pastel Ferris wheel, and the round carousel with its pink-and-cream striped canopy. Echo hops happily up the path in the lower middle, wings out, excited, little puffs of dust behind him. No one else is in the picture. No writing on any tent or flag."
+        },
+        "s04": {
+          "light": "day",
+          "picture": "At the carnival on the sunny hilltop, in front of the round carousel with its pink-and-cream striped canopy and its painted animals (a white horse, a lilac horse, a spotted cow, a white swan and a camel with a bright blue saddle) standing perfectly still. Coco the kangaroo in her little lilac bow stands on the left beside the tall golden center pole, pointing one paw at the round brass keyhole low on the pole, which is empty, with a puzzled, silly face, not sad. Echo stands on the right, wings up, surprised. There is no key anywhere in the picture: not in the keyhole, not on the ground, not held by anyone. The key is missing."
+        },
+        "s05": {
+          "light": "day",
+          "picture": "At the candy stand at the carnival on the sunny hilltop: a little stand with a pink-and-white striped awning, lots of fluffy pink cotton candy on sticks in a row and a jar of colorful round candy on its counter. Echo peeks around the side of the candy stand in the middle of the picture, looking behind it, eyes wide, and Coco the kangaroo bends down beside him on the left, lifting a flap of the striped cloth to look under the counter. Behind the stand there is only grass and a few fallen candy wrappers made of plain shiny paper. There is no key anywhere in the picture. No writing on the stand."
+        },
+        "s06": {
+          "light": "day",
+          "picture": "Beside the little red popcorn cart on wheels at the carnival on the sunny hilltop, its glass box full of fluffy popcorn. A curious little cat with striped ginger-and-cream fur sits on top of the popcorn cart in the middle of the picture, pointing one white paw straight up toward the sky on the right, where the top of the small pastel Ferris wheel can be seen. Echo stands on the left looking up where the cat points, one wing shading his eyes, and Coco the kangaroo stands just behind Echo, looking up too, curious. The very top of the Ferris wheel is small and far away, and nothing can be seen on it clearly yet."
+        },
+        "s07": {
+          "light": "day",
+          "picture": "At the small pastel Ferris wheel at the carnival on the sunny hilltop, seen from below. A silly little cockatoo with a tall curly sunny-yellow crest perches on top of the highest round gondola in the upper middle of the picture, holding the big shiny brass carousel key in her beak by its round loop handle, her eyes goofy and happy, her crest bouncing, with a few little curvy motion lines beside her crest. Echo stands on the grass on the left, laughing, wings up. Coco the kangaroo stands on the grass on the right, giggling, both front paws on her cheeks."
+        },
+        "s08": {
+          "light": "day",
+          "picture": "On the grass beside the small pastel Ferris wheel at the carnival on the sunny hilltop. Echo stands just left of the middle, holding up a tasty cupcake with swirly pink frosting and a cherry on top in both wings. The silly little cockatoo with her tall curly sunny-yellow crest flutters down in the middle of the picture, wings spread, dropping the big shiny brass key into Coco's open paws and reaching her beak toward the cupcake. Coco the kangaroo stands just right of the middle, smiling, catching the key. All three are easy to see: nobody is in front of anybody."
+        },
+        "e01": {
+          "light": "day",
+          "picture": "At the round carousel at the carnival on the sunny hilltop. Coco the kangaroo in her little lilac bow stands by the tall golden center pole in the middle of the picture and turns the big shiny brass key in the round keyhole low on the pole, with two little curvy click lines beside it. The carousel spins: its pink-and-cream striped canopy and its painted animals (a white horse, a lilac horse, a spotted cow, a white swan and a camel with a bright blue saddle) swirl round with soft curvy motion lines, and a few little music notes float up into the air. Echo cheers on the left, wings up. The silly little cockatoo with her tall yellow crest flaps happily on the right, nibbling the last bit of her cupcake."
+        },
+        "e02": {
+          "light": "afternoon",
+          "picture": "On the spinning carousel at the carnival on the hilltop on a warm, sunny afternoon, the pink-and-cream striped canopy above. Echo rides a painted carousel camel with a bright blue saddle in the middle of the picture, front and center, wings up, beaming. Around him the carousel animals go round with soft curvy motion lines: Coco the kangaroo rides a white carousel horse on the left, laughing, and the silly little cockatoo perches on a lilac carousel horse on the right, and the curious little cat sits on the spotted carousel cow, all happy. A few little music notes float in the air. No writing anywhere."
+        },
+        "e03": {
+          "light": "afternoon",
+          "picture": "Beside the carousel at the carnival on the hilltop in the warm late afternoon. Coco the kangaroo in her little lilac bow bends down in the middle of the picture and holds out one shiny round copper coin in her paw toward Echo, smiling kindly; the coin is plain and smooth, with a tiny carousel horse pressed into it and no writing or numbers. Echo stands on the left, wings out to take the coin, beaming. The silly little cockatoo perches on Coco's shoulder, waving a wing. The carousel turns gently behind them."
+        },
+        "e04": {
+          "light": "evening",
+          "picture": "Evening inside Echo's cozy round cottage, lamp-lit: the whole helper map (THE HELPER MAP, the same map as in the attached earlier picture, seen whole as it is there, with its frame and its four brass pins in view) pinned to the wall, filling the upper middle of the picture, with no writing anywhere on it. Most of the map is still covered by soft white puffy clouds. One soft white cloud has just drifted off to one side, uncovering a new place: a tiny green hill with a tiny striped carousel on top. There is NO star of any kind on the map or anywhere else in the picture, except the ONE new gold star Echo is pressing on. A low wooden bench stands under the map, a little left of the middle; Echo stands on the bench, on tiptoe, pressing ONE new shiny gold star sticker onto the tiny carousel hill with one wing, beaming. A small shiny round copper coin rests on the bench beside him. Just right of the bench, below the map and well inside the picture (not at its edge), a big round window shows the sunset outside, big and easy to see: a glowing peach, pink and lilac sky with the round orange sun sinking low on the far horizon. Plain wooden floor below.",
+          "also": [
+            "file:design/adventure/refs/ref-map.webp"
+          ]
+        }
+      }
+    },
+    {
+      "id": "gabby",
+      "light": "day",
+      "lineups": [
+        "gabby"
+      ],
+      "talk": true,
+      "bible": "PELLY: Pelly the pelican, a big white clay pelican (a real pelican, not a duck) with a very long, straight peach-orange bill, longer than her head, and a big, soft, lumpy peach pouch hanging under it, a small round light-blue postal cap with a little white envelope badge (no anchor), no scarf, and a brown leather mail satchel across her body; about twice Echo's height. GABBY: Gabby the gorilla, a young, round, gentle clay gorilla (a girl) about twice Echo's height, standing on her short legs and leaning on her long arms: soft charcoal-grey fur, a smooth pale grey face, chest, hands and feet, big shiny friendly brown eyes, a wide happy smile, small pink cheeks, small round ears, and a little mint-green sun visor on her head; no clothes. GULL: the gull, a cheeky little clay seagull about Echo's height: a round white body, soft pale grey wings, a short yellow beak, small orange webbed feet, big goofy friendly eyes and small pink cheeks. GOLDFISH: the goldfish, a small, round, friendly clay goldfish about half of Echo's height: shiny orange-gold scales, a big flowing gauzy tail, big friendly eyes, small pink cheeks and a happy little smile; she lives in the little pond and only ever appears in or at the edge of the water. The place in this story is Gabby's mini golf course: a small, tidy, sunny mini golf course on a gentle green hill, with smooth bright green putting lanes edged by low round wooden rails, each lane ending in a little round cup with a small plain white flag on a thin pole (no numbers or letters on any flag); a little red clay windmill with four slowly turning white sails stands in the middle of the course, a funny green clay frog statue with a wide open mouth sits beside one lane, a little vegetable garden with big leafy pumpkin plants lies along one side, a small round blue pond with lily pads sits at the bottom of the hill, and a low white wooden gate opens onto the course from a winding path. The golf balls are small plain white golf balls with no writing and no logo, each about a quarter of Echo's height, Gabby has six of them in all, and they belong in a small blue bucket. Gabby's golf club is a small, short, rounded wooden toy putter. No flag, ball, bucket, sign or windmill has any writing, number or letter on it.",
+      "who": {
+        "GABBY": {
+          "re": "\\bGabby\\b",
+          "label": "Gabby the gorilla"
+        },
+        "GULL": {
+          "re": "\\bgull\\b",
+          "label": "the cheeky gull"
+        },
+        "GOLDFISH": {
+          "re": "\\bgoldfish\\b",
+          "label": "the goldfish"
+        }
+      },
+      "home": "A wide picture for a game card. On a sunny mini golf course on a green hill, the little red windmill with its white sails behind, Gabby the gorilla in her mint-green sun visor taps a small white golf ball with her little wooden putter toward a little round cup with a small plain white flag, just right of the middle, beaming. Echo hops beside her just left of the middle, wings up, cheering. Echo, Gabby, the ball and the flag are all in the middle band of the picture: their tops below 25% from the top and their bottoms above 75% from the top. Only Echo and Gabby appear: no other characters.",
+      "chars": [
+        {
+          "key": "gabby",
+          "h": 2,
+          "prompt": "Gabby the gorilla, full body, standing on her short legs and leaning on her long arms, facing forward, waving one big hand and smiling: a young, round, gentle clay gorilla (a girl) about twice Echo's height, standing on her short legs and leaning on her long arms: soft charcoal-grey fur, a smooth pale grey face, chest, hands and feet, big shiny friendly brown eyes, a wide happy smile, small pink cheeks, small round ears, and a little mint-green sun visor on her head; no clothes."
+        },
+        {
+          "key": "gull",
+          "h": 1,
+          "prompt": "A cheeky little clay seagull, full body, standing, facing forward, one wing raised in a wave, smiling: a cheeky little clay seagull about Echo's height: a round white body, soft pale grey wings, a short yellow beak, small orange webbed feet, big goofy friendly eyes and small pink cheeks."
+        },
+        {
+          "key": "goldfish",
+          "h": 0.5,
+          "prompt": "A small clay goldfish, whole body, swimming sideways and turned a little toward us, smiling: a small, round, friendly clay goldfish about half of Echo's height: shiny orange-gold scales, a big flowing gauzy tail, big friendly eyes, small pink cheeks and a happy little smile."
+        }
+      ],
+      "scenes": {
+        "s01": {
+          "light": "day",
+          "picture": "A bright sunny morning at the round blue front door of Echo's cottage (ECHO'S COTTAGE, exactly as in the attached earlier picture). Pelly the pelican stands on the left of the door and proudly pulls a pair of bright purple swim goggles (two round clear lenses joined by a little bridge, with a stretchy purple strap) out of her beak pouch, the goggles dangling from the tip of her bill as if they were a letter, looking very pleased with herself. Echo stands just right of the middle on the wide doorstep, laughing, wings up.",
+          "also": [
+            "file:public/assets/adventure/lighthouse/s01.webp"
+          ]
+        },
+        "s02": {
+          "light": "day",
+          "picture": "Close up on the porch of Echo's cottage on a sunny morning. Pelly the pelican's big white wing (only her wing and the edge of her body, from the left edge) holds out a cream paper letter in the upper middle of the picture. On the letter is a child's crayon drawing of a smiling grey gorilla in a green visor on a green hill beside a little red windmill, with small white crayon balls blowing away across the paper on swirly crayon wind lines, and a big round crayon sun: only crayon lines, no writing at all. Echo stands just left of the middle, leaning in toward the letter, eyes wide with excitement, the purple swim goggles lying on the porch beside him.",
+          "also": [
+            "file:public/assets/adventure/lighthouse/s02.webp"
+          ]
+        },
+        "s03": {
+          "light": "day",
+          "picture": "A bright sunny morning on a winding path through soft green grass. Ahead, a low white wooden gate stands wide open, and through the gate the little mini golf course on its gentle green hill can be seen, with its bright green lanes, small plain white flags and the little red windmill with white sails in the middle. Echo hurries along the path toward the gate in the lower middle, wings out, happy and excited, little puffs of dust behind him. No one else is in the picture."
+        },
+        "s04": {
+          "light": "day",
+          "picture": "On a bright sunny morning on Gabby's mini golf course, beside the little red windmill. A small blue bucket lies tipped over on its side on the green lane, completely empty: there is no golf ball anywhere in the picture, not in the bucket, not on the grass, not in any cup. A few soft swirly wind lines and two leaves drift past to show the gust has just gone by. Gabby the gorilla in her mint-green sun visor stands on the left holding her little wooden putter, one big hand on her head, puzzled and silly, not sad. Echo stands on the right, wings up, surprised."
+        },
+        "s05": {
+          "light": "day",
+          "picture": "At the little vegetable garden along the side of Gabby's mini golf course, on a sunny morning. Under the big, wide, leafy green pumpkin leaves, beside two round orange pumpkins, exactly three small white golf balls peek out, each clearly separate and easy to count: the only golf balls in the picture. Echo lifts one big pumpkin leaf with his wing in the lower middle, eyes wide and happy. Gabby the gorilla in her mint-green sun visor kneels beside him on the left, pointing at the balls with one big finger, excited."
+        },
+        "s06": {
+          "light": "day",
+          "picture": "At the small round blue pond with lily pads at the bottom of the mini golf hill, on a sunny morning. Exactly two small white golf balls float on the water: the only golf balls in the picture. A small, friendly goldfish pokes her head up out of the water and gently nudges one ball toward the grassy edge with her nose, the other ball bobbing just behind it, little ripples around them. Echo kneels at the edge of the pond in the lower middle, reaching out a wing, smiling. Gabby the gorilla in her mint-green sun visor stands on the left, clapping her big hands."
+        },
+        "s07": {
+          "light": "day",
+          "picture": "On the mini golf course beside the little red windmill on a sunny morning. A cheeky little gull sits on top of the windmill, between its white sails, holding exactly one small white golf ball in its beak, its eyes goofy and happy: the only golf ball in the picture. Echo stands below on the left, looking up and laughing, wings up. Gabby the gorilla in her mint-green sun visor stands below on the right, looking up and giggling, one big hand on her cheek."
+        },
+        "s08": {
+          "light": "day",
+          "picture": "On the mini golf course at the foot of the little red windmill on a sunny morning. The cheeky little gull, on the windmill's lower edge, has just let go of the one small white golf ball, which drops with a little plop toward Gabby the gorilla's big open cupped hands, a few curvy motion lines above it. Gabby, in her mint-green sun visor, stands just right of the middle, holding her hands out, smiling. Echo stands just left of the middle, one wing held out politely toward the gull as if asking nicely, smiling. Everyone is easy to see: nobody is in front of anybody."
+        },
+        "e01": {
+          "light": "day",
+          "picture": "On the mini golf course on a bright sunny day. The small blue bucket stands upright on the green lane in the middle of the picture, full: exactly six small white golf balls are in it, piled up and easy to count, the only golf balls in the picture. Gabby the gorilla in her mint-green sun visor holds up her little wooden putter on the right, ready to play, beaming. Echo cheers on the left, wings up. The cheeky little gull stands on the rail of a lane behind them, flapping happily."
+        },
+        "e02": {
+          "light": "afternoon",
+          "picture": "On the mini golf course on a warm, sunny afternoon. Beside one bright green lane sits a funny, goofy green clay frog statue with a wide open mouth and big silly eyes. Echo has just tapped a small white golf ball with a little wooden putter, and the ball rolls along the lane, a few soft motion lines behind it, right into the frog statue's wide open mouth. Echo stands on the left, holding the putter, laughing. Gabby the gorilla in her mint-green sun visor stands on the right, both hands on her cheeks, giggling."
+        },
+        "e03": {
+          "light": "afternoon",
+          "picture": "On a soft green spot beside the mini golf course on a warm late afternoon, a checked picnic blanket spread on the grass. Gabby the gorilla in her mint-green sun visor sits in the middle holding out a big woven basket of goodies: red apples, yellow bananas, round cookies and little cupcakes. Echo sits on the left, reaching happily for a cookie. The cheeky little gull stands on the right edge of the blanket, nibbling a cookie crumb, smiling. The little red windmill turns in the background."
+        },
+        "e04": {
+          "light": "evening",
+          "picture": "Evening inside Echo's cozy round cottage, lamp-lit: the whole helper map (THE HELPER MAP, the same map as in the attached earlier picture, seen whole as it is there, with its frame and its four brass pins in view) pinned to the wall, filling the upper middle of the picture, with no writing anywhere on it. Most of the map is still covered by soft white puffy clouds. One soft white cloud has just drifted off to one side, uncovering a new place: a tiny green hill with a tiny red windmill and tiny white flags of a mini golf course. There is NO star of any kind on the map or anywhere else in the picture, except the ONE new gold star Echo is pressing on. A low wooden bench stands under the map, a little left of the middle; Echo stands on the bench, on tiptoe, pressing ONE new shiny gold star sticker onto the tiny golf course with one wing, beaming. A small white golf ball and a tiny plain white flag rest on the bench beside him. Just right of the bench, below the map and well inside the picture (not at its edge), a big round window shows the sunset outside, big and easy to see: a glowing peach, pink and lilac sky with the round orange sun sinking low on the far horizon. Plain wooden floor below.",
+          "also": [
+            "file:design/adventure/refs/ref-map.webp"
+          ]
+        }
+      }
+    },
+    {
+      "id": "shona",
+      "light": "day",
+      "lineups": [
+        "shona"
+      ],
+      "talk": true,
+      "bible": "PELLY: Pelly the pelican, a big white clay pelican (a real pelican, not a duck) with a very long, straight peach-orange bill, longer than her head, and a big, soft, lumpy peach pouch hanging under it, a small round light-blue postal cap with a little white envelope badge (no anchor), no scarf, and a brown leather mail satchel across her body; about twice Echo's height. SHONA: Shona the sheep, a young, round, fluffy clay sheep (a girl) about one and a half times Echo's height, standing on four short legs like a real sheep (never standing up like a person): thick, curly, puffy snow-white wool all over her body like a cloud, a soft cream face with no wool on it, two small floppy cream ears, big shiny dark friendly eyes, small pink cheeks, a little pink nose, four short cream legs with small dark-grey hooves, a little round woolly tail, and a small lilac ribbon bow on the wool on top of her head; no clothes. When she is muddy, her white wool has big brown splotches of soft, silly mud on it, but her face, ears, bow and shape stay the same. FARM FRIENDS: Shona's three farm friends, who come to her party: a little clay piglet (a boy) about Echo's height, standing on four short legs, with smooth soft-pink skin, a round pink snout, two small pointy ears, big friendly eyes, small pink cheeks and a curly tail; a little clay calf (a girl) about one and a half times Echo's height, standing on four legs, with soft cream fur with a few big chocolate-brown patches, a pale pink nose, two small floppy ears, two tiny rounded nubs on her head, big friendly eyes and small pink cheeks; and a little round clay hen about Echo's height, with fluffy honey-brown feathers, a small red comb on her head, a short yellow beak, yellow feet, big friendly eyes and small pink cheeks. No one wears any clothes. The place in this story is Shona's farm: a small, sunny green farmyard with a low white wooden fence, soft green grass, a few round leafy trees and rolling green hills behind; a little old red wooden shed with a white door stands at the side of the yard; in one corner lies a big, round, soft brown mud puddle; and by the shed stands a simple outdoor shower: a tall wooden post with a big round silver showerhead at its top that sprinkles gentle drops of water onto a round wooden platform below. Shona's shampoo is a round, chubby pink bottle with a white cap, with no label and no writing. The big soft sheet is a plain cream cotton sheet with no pattern. On the party day, colorful little triangle flags hang along the fence, with no writing on any of them.",
+      "who": {
+        "SHONA": {
+          "re": "\\bShona\\b",
+          "label": "Shona the sheep"
+        },
+        "FARM FRIENDS": {
+          "re": "\\bfarm friends\\b|\\bpiglet\\b|\\bcalf\\b|\\bhen\\b",
+          "label": "Shona's three farm friends"
+        }
+      },
+      "home": "A wide picture for a game card. In a sunny green farmyard with a low white fence and rolling green hills behind, Shona the sheep, with clean, puffy, snow-white wool and her lilac bow, stands under the gentle sprinkle of the outdoor shower just right of the middle, beaming, a few big round soap bubbles floating up around her. Echo hops beside her just left of the middle, wings up, laughing, holding the round pink shampoo bottle. Echo and Shona are both in the middle band of the picture: their tops below 25% from the top and their bottoms above 75% from the top. Only Echo and Shona appear: no other characters. The bottle has no label and no writing.",
+      "chars": [
+        {
+          "key": "shona",
+          "h": 1.5,
+          "prompt": "Shona the sheep, full body, standing on her four short legs, facing forward, smiling: a young, round, fluffy clay sheep (a girl) about one and a half times Echo's height, standing on four short legs like a real sheep (never standing up like a person): thick, curly, puffy snow-white wool all over her body like a cloud, a soft cream face with no wool on it, two small floppy cream ears, big shiny dark friendly eyes, small pink cheeks, a little pink nose, four short cream legs with small dark-grey hooves, a little round woolly tail, and a small lilac ribbon bow on the wool on top of her head; no clothes."
+        },
+        {
+          "key": "piglet",
+          "h": 1,
+          "prompt": "A little clay piglet, full body, standing on his four short legs, facing forward, smiling: smooth soft-pink skin, a round pink snout, two small pointy ears, big friendly eyes, small pink cheeks and a curly tail; no clothes."
+        },
+        {
+          "key": "calf",
+          "h": 1.5,
+          "prompt": "A little clay calf, full body, standing on her four legs, facing forward, smiling: soft cream fur with a few big chocolate-brown patches, a pale pink nose, two small floppy ears, two tiny rounded nubs on her head, big friendly eyes and small pink cheeks; no clothes."
+        },
+        {
+          "key": "hen",
+          "h": 1,
+          "prompt": "A little round clay hen, full body, standing, facing forward, flapping her little wings and smiling: fluffy honey-brown feathers, a small red comb on her head, a short yellow beak, yellow feet, big friendly eyes and small pink cheeks."
+        }
+      ],
+      "scenes": {
+        "s01": {
+          "light": "day",
+          "picture": "A bright sunny morning at the round blue front door of Echo's cottage (ECHO'S COTTAGE, exactly as in the attached earlier picture). Pelly the pelican stands on the left of the door and proudly pulls a little shirt (a small, bright yellow cotton shirt with big round sky-blue polka dots, with no writing and no picture on it) out of her beak pouch, the shirt dangling from the tip of her bill as if it were a letter, looking very pleased with herself. Echo stands just right of the middle on the wide doorstep, laughing, wings up.",
+          "also": [
+            "file:public/assets/adventure/lighthouse/s01.webp"
+          ]
+        },
+        "s02": {
+          "light": "day",
+          "picture": "Close up on the porch of Echo's cottage on a sunny morning. Pelly the pelican's big white wing (only her wing and the edge of her body, from the left edge) holds out a cream paper letter in the upper middle of the picture. On the letter is a child's crayon drawing of a fluffy white sheep with a little purple bow, covered in big brown mud splotches, standing beside a brown crayon mud puddle on green grass, with a big round crayon sun: only crayon lines, no writing at all. Echo stands just left of the middle, leaning in toward the letter, eyes wide with excitement, the little yellow shirt with sky-blue polka dots lying on the porch beside him.",
+          "also": [
+            "file:public/assets/adventure/lighthouse/s02.webp"
+          ]
+        },
+        "s03": {
+          "light": "day",
+          "picture": "A bright sunny morning on a winding dirt path through rolling green hills, a big round friendly sun high in the clear blue sky. Beside the path, on the left, stands a little old red wooden shed with a white door, and ahead, past the shed, lies a small green farmyard with a low white wooden fence. Echo hurries along the path past the shed in the lower middle, wings out, happy and excited, little puffs of dust behind him. No one else is in the picture."
+        },
+        "s04": {
+          "light": "day",
+          "picture": "In Shona's sunny farmyard, beside the big round brown mud puddle. Shona the sheep stands on the left on her four legs, her white wool covered all over in big brown splotches of soft mud, her lilac bow a little crooked, giggling and silly, not sad. Echo stands on the right, wings up, eyes wide in surprise, pointing one wing at the outdoor shower on the right edge of the yard: the tall wooden post with its big round silver showerhead over a round wooden platform, ready but not yet on, with no water coming out."
+        },
+        "s05": {
+          "light": "day",
+          "picture": "At the outdoor shower in Shona's sunny farmyard. Gentle drops of water sprinkle down from the big round silver showerhead. Shona the sheep stands on the round wooden platform under the drops, eyes closed and smiling, her wool still a little muddy in places. Echo stands on an upturned wooden bucket beside her, squeezing the round chubby pink shampoo bottle (no label, no writing) with one wing and rubbing the shampoo into her wool with the other, and big fluffy white soap bubbles pile up all over her wool and float up into the air."
+        },
+        "s06": {
+          "light": "day",
+          "picture": "At the outdoor shower in Shona's sunny farmyard, a close and funny view. Shona the sheep stands on the round wooden platform, covered in fluffy white soap bubbles, and the bubbles on her have made three funny shapes, each one easy to see: a tall bubble top hat on top of her head beside her lilac bow, a long bubble beard under her chin, and a big bubble bow on her tail. Shona looks up at her bubble hat, giggling. Echo stands beside her on the upturned bucket, laughing so hard he holds his tummy, the pink shampoo bottle beside him."
+        },
+        "s07": {
+          "light": "day",
+          "picture": "In Shona's sunny farmyard, just off the shower platform. Shona the sheep, her wool now clean and wet and droopy, gives a big happy wiggly shake from her head to her tail, with curvy motion lines all around her, and a big splash of sparkling water drops flies off her wool in every direction. Echo stands on the right, dripping wet, his head feathers flattened, eyes squeezed shut, laughing, both wings up. A few drops land on the grass around them."
+        },
+        "s08": {
+          "light": "day",
+          "picture": "On the soft green grass of Shona's farmyard in the warm sun. Shona the sheep sits snugly on the grass in the middle, wrapped up in a big soft plain cream sheet (no pattern), only her smiling face, her floppy ears and her lilac bow peeking out of the top, looking warm and cozy. Echo stands just left of her, tucking the edge of the sheet around her with both wings, smiling."
+        },
+        "e01": {
+          "light": "day",
+          "picture": "In Shona's sunny farmyard. The cream sheet lies folded on the grass, and Shona the sheep stands proudly in the middle of the picture, all dry, her wool puffy, curly, snow-white and shiny like a soft white cloud, a gentle soft glow on it, her lilac bow straight again. She does a happy little hop. Echo stands on the left, wings up, cheering, amazed at how fluffy and clean she is."
+        },
+        "e02": {
+          "light": "afternoon",
+          "picture": "The party in Shona's farmyard on a warm, sunny afternoon, colorful little triangle flags (no writing) hanging along the low white fence. Everyone dances in a happy row on the green grass, shuffling their feet, with little curvy motion lines by every foot: Shona the sheep in the middle with her clean, puffy white wool and lilac bow, Echo beside her, and Shona's three farm friends, the little piglet, the little calf and the little hen, all smiling and dancing. Every face shows and nobody is in front of anybody."
+        },
+        "e03": {
+          "light": "afternoon",
+          "picture": "In Shona's farmyard in the warm late afternoon, the party flags (no writing) along the fence behind. Shona the sheep, with clean, puffy white wool, holds out a small, soft, round ball of her own clean white wool, tied with a little lilac ribbon, and shares it with Echo, who takes it in both wings, beaming. The little piglet, the little calf and the little hen, her farm friends, stand behind them, smiling and waving goodbye."
+        },
+        "e04": {
+          "light": "evening",
+          "picture": "Evening inside Echo's cozy round cottage, lamp-lit: the whole helper map (THE HELPER MAP, the same map as in the attached earlier picture, seen whole as it is there, with its frame and its four brass pins in view) pinned to the wall, filling the upper middle of the picture, with no writing anywhere on it. Most of the map is still covered by soft white puffy clouds. One soft white cloud has just drifted off to one side, uncovering a new place: a tiny green farmyard with a tiny red shed and a tiny white fence. There is NO star of any kind on the map or anywhere else in the picture, except the ONE new gold star Echo is pressing on, which shines with a soft glow. A low wooden bench stands under the map, a little left of the middle; Echo stands on the bench, on tiptoe, pressing ONE new shiny gold star sticker onto the tiny farmyard with one wing, beaming. A small round ball of soft white wool tied with a little lilac ribbon rests on the bench beside him. Just right of the bench, below the map and well inside the picture (not at its edge), a big round window shows the evening sky outside: a glowing peach, pink and lilac sky over soft green hills. Plain wooden floor below.",
+          "also": [
+            "file:design/adventure/refs/ref-map.webp"
+          ]
+        }
+      }
+    },
+    {
+      "id": "chico",
+      "light": "day",
+      "lineups": [
+        "chico"
+      ],
+      "talk": true,
+      "bible": "PELLY: Pelly the pelican, a big white clay pelican (a real pelican, not a duck) with a very long, straight peach-orange bill, longer than her head, and a big, soft, lumpy peach pouch hanging under it, a small round light-blue postal cap with a little white envelope badge (no anchor), no scarf, and a brown leather mail satchel across her body; about twice Echo's height. CHICO: Chico the chinchilla, a small, round, friendly clay chinchilla (a boy) about one and a quarter times Echo's height who stands up on his back legs: very soft, fluffy silver-grey fur, a pale cream tummy, two big round ears that are pink inside, big shiny dark friendly eyes, a small pink nose, long white whiskers, small pink cheeks, little pink paws, a long fluffy grey tail, and a little mustard-yellow bandana tied around his neck; no other clothes, no hat. CHICKADEE: a little clay chickadee (a girl) about two thirds of Echo's height, small and slim with a little round head: a black cap and a small black bib under her beak, bright white cheeks, soft grey wings and back, warm peach-buff sides, a short pointy black beak, thin dark legs, big friendly eyes and small pink cheeks; never teal, never blue, never round like Echo. The place in this story is Chico's hill: a gentle, breezy grassy hilltop with soft rolling green hills below and the calm blue sea far away; a winding dirt path climbs up the hill, lined with big smooth pale grey rocks; near the top, Chico's home is a small round cottage of smooth grey stones tucked into the hillside, with a round red door and one round window; a low wooden fence with round-topped posts runs along the top of the hill, and at the very top stands one big old oak tree with a wide trunk and leafy green branches, a soft pile of golden fallen leaves around its roots. The treasure chest is a small wooden treasure chest about as tall as Echo, with a rounded lid, shiny brass corners and a little gold chain hooked over a round brass latch on the front (no keyhole, no writing on it). The chalk arrows are simple white chalk arrows drawn on the rocks. No writing, no letters and no numbers anywhere: not on the chest, the rocks, the fence or the door.",
+      "who": {
+        "CHICO": {
+          "re": "\\bChico\\b",
+          "label": "Chico the chinchilla"
+        },
+        "CHICKADEE": {
+          "re": "\\bchickadee\\b",
+          "label": "the little chickadee"
+        }
+      },
+      "home": "A wide picture for a game card. On a sunny, breezy grassy hilltop beside a big old oak tree, the soft rolling green hills and the calm blue sea far behind, Chico the chinchilla in his mustard-yellow bandana holds up the open wooden treasure chest with its brass corners and little gold chain, just right of the middle, beaming. Echo leaps up beside him just left of the middle, wings up, cheering. Echo, Chico and the chest are all in the middle band of the picture: their tops below 25% from the top and their bottoms above 75% from the top. Only Echo and Chico appear: no other characters. No writing anywhere.",
+      "chars": [
+        {
+          "key": "chico",
+          "h": 1.25,
+          "prompt": "Chico the chinchilla, full body, standing up on his back legs, facing forward, waving one little paw and smiling: a small, round, friendly clay chinchilla (a boy) about one and a quarter times Echo's height who stands up on his back legs: very soft, fluffy silver-grey fur, a pale cream tummy, two big round ears that are pink inside, big shiny dark friendly eyes, a small pink nose, long white whiskers, small pink cheeks, little pink paws, a long fluffy grey tail, and a little mustard-yellow bandana tied around his neck; no other clothes, no hat."
+        },
+        {
+          "key": "chickadee",
+          "h": 0.67,
+          "prompt": "A little clay chickadee, full body, standing, facing forward, one wing raised in a wave, smiling: small and slim with a little round head: a black cap and a small black bib under her beak, bright white cheeks, soft grey wings and back, warm peach-buff sides, a short pointy black beak, thin dark legs, big friendly eyes and small pink cheeks; never teal, never blue, never round like Echo."
+        }
+      ],
+      "scenes": {
+        "s01": {
+          "light": "day",
+          "picture": "A bright sunny morning at the round blue front door of Echo's cottage (ECHO'S COTTAGE, exactly as in the attached earlier picture). Pelly the pelican stands on the left of the door and proudly pulls a floppy yellow rubber chicken (a classic squeaky toy chicken with a red comb, a long floppy neck and dangly orange legs) out of her beak pouch, the rubber chicken dangling from the tip of her bill as if it were a letter, looking very pleased with herself. Echo stands just right of the middle on the wide doorstep, laughing, wings up.",
+          "also": [
+            "file:public/assets/adventure/lighthouse/s01.webp"
+          ]
+        },
+        "s02": {
+          "light": "day",
+          "picture": "Close up on the porch of Echo's cottage on a sunny morning. Pelly the pelican's big white wing (only her wing and the edge of her body, from the left edge) holds out a cream paper letter in the upper middle of the picture. On the letter is a child's crayon drawing of a smiling grey chinchilla with big round ears on top of a green hill beside a tree, scratching his head, and a little brown treasure chest drawn faintly in a soft crayon cloud beside his head, with a big round crayon sun: only crayon lines, no writing at all, no letters or numbers. Echo stands just left of the middle, leaning in toward the letter, eyes wide with excitement, the floppy yellow rubber chicken lying on the porch beside him.",
+          "also": [
+            "file:public/assets/adventure/lighthouse/s02.webp"
+          ]
+        },
+        "s03": {
+          "light": "day",
+          "picture": "A bright, breezy morning on a green hillside, a big round friendly sun in the clear blue sky. A winding dirt path climbs up the grassy hill between big smooth pale grey rocks, toward a small round cottage of grey stones with a round red door tucked into the hillside near the top, and one big old oak tree at the very top. The wind is chilly: soft curvy wind lines swirl across the picture and a few golden leaves and blades of grass blow along. Echo hurries up the path in the lower middle, feathers ruffled a little by the wind, happy and excited. No one else is in the picture."
+        },
+        "s04": {
+          "light": "day",
+          "picture": "On the grassy hilltop in front of the small round grey stone cottage with its round red door, on a bright, breezy morning. Chico the chinchilla, in his mustard-yellow bandana, stands on the left, scratching his head with one paw, looking puzzled and silly, not sad, his big round ears tipped to one side. Above his head floats a soft thought bubble holding a small picture of the wooden treasure chest with its little gold chain. Echo stands on the right, wings up, surprised and ready to help. There is no real treasure chest anywhere on the ground: only the little picture of it in the thought bubble. The chest is missing."
+        },
+        "s05": {
+          "light": "day",
+          "picture": "Beside the winding dirt path on the grassy hill, on a bright, breezy morning. In the middle of the picture stands a big smooth pale grey rock with one big, simple white chalk arrow drawn on it, pointing up the hill to the right. Further up the path, two more rocks each have a small white chalk arrow pointing the same way, toward a low wooden fence near the top of the hill. Echo stands in the lower middle, pointing one wing at the chalk arrow on the big rock, eyes wide. Chico the chinchilla stands beside him on the left, holding a stick of white chalk in one paw, a little sheepish and giggling. There is no treasure chest anywhere in the picture."
+        },
+        "s06": {
+          "light": "day",
+          "picture": "At the low wooden fence with round-topped posts along the top of the grassy hill, on a bright, breezy morning. The last chalk arrow is drawn on a small pale grey rock at the foot of the fence, and the path of arrows ends there. A little chickadee sits on top of a fence post in the middle of the picture, beak open in a happy chirp with two small curvy music-like chirp lines (no notes, no writing), pointing one wing toward a big old oak tree on the right with a soft pile of golden fallen leaves around its roots. Echo stands in the lower left, looking up at the chickadee, delighted, and Chico the chinchilla stands beside him, his big round ears perked up. There is no treasure chest anywhere in the picture: only the pile of leaves under the tree."
+        },
+        "s07": {
+          "light": "day",
+          "picture": "Under the big old oak tree at the top of the hill, on a bright, breezy morning. A soft round pile of golden fallen leaves lies at the roots of the tree in the lower middle; nothing is showing in the leaves (no chest, no chain, no corner). Chico the chinchilla stands just right of the pile, one paw on his tummy and the other on his forehead, chuckling with his eyes squeezed happily shut, a little light bulb shape glowing softly above his head because he remembers. Echo stands on the left, laughing along, wings up. The little chickadee sits on a low branch above, smiling."
+        },
+        "s08": {
+          "light": "day",
+          "picture": "Under the big old oak tree at the top of the hill, on a bright, breezy morning. The golden leaves have been brushed away to the sides, and in the middle of the picture sits a small wooden treasure chest about as tall as Echo, with a rounded lid, shiny brass corners and a little gold chain hooked over a round brass latch on the front (no keyhole, no writing on it), easy to see. Chico the chinchilla kneels beside the chest on the right, carefully unhooking the little gold chain from the round brass latch with his paws, excited. Echo stands on the left, wings clasped together, eyes shining. A few golden leaves flutter in the air. The little chickadee peeks down from a low branch above."
+        },
+        "e01": {
+          "light": "day",
+          "picture": "Under the big old oak tree on the sunny hilltop. The wooden treasure chest stands open in the middle of the picture, its rounded lid tipped back, and inside it is a treasure picnic, easy to see: a big wedge of yellow cheese with round holes, a little pile of round crackers and a small bowl of red and blue berries. Chico the chinchilla stands on the right, paws up, beaming. Echo stands on the left, wings up, amazed. The little chickadee hops on the edge of the chest, delighted. Nothing is written on the chest."
+        },
+        "e02": {
+          "light": "afternoon",
+          "picture": "On the grassy hilltop beside the big old oak tree on a warm, sunny afternoon. A red-and-white checked picnic blanket is spread on the grass in the middle of the picture, with the open wooden treasure chest at one corner. Echo, Chico the chinchilla and the little chickadee sit together on the blanket, each one easy to see, happily munching: Chico nibbles a round cracker with both paws, the chickadee pecks at a berry, and Echo takes a happy bite of a small piece of cheese, little crumbs flying, everyone with big happy cheeks. The soft rolling green hills and the calm blue sea are far behind."
+        },
+        "e03": {
+          "light": "afternoon",
+          "picture": "On the grassy hilltop beside the big old oak tree in the warm late afternoon. In the middle of the picture, Chico the chinchilla gives Echo a big warm hug, their cheeks pressed happily together, both beaming with their eyes closed, little soft hearts floating above them. The open wooden treasure chest and the red-and-white checked picnic blanket are behind them on the grass, and the little chickadee flutters above, wings spread, cheering."
+        },
+        "e04": {
+          "light": "evening",
+          "picture": "Evening inside Echo's cozy round cottage, lamp-lit: the whole helper map (THE HELPER MAP, the same map as in the attached earlier picture, seen whole as it is there, with its frame and its four brass pins in view) pinned to the wall, filling the upper middle of the picture, with no writing anywhere on it. Most of the map is still covered by soft white puffy clouds. One soft white cloud has just drifted off to one side, uncovering a new place: a tiny green hill with a tiny oak tree on top and a tiny round grey stone cottage on its side. There is NO star of any kind on the map or anywhere else in the picture, except the ONE new gold star Echo is pressing on. A low wooden bench stands under the map, a little left of the middle; Echo stands on the bench, on tiptoe, pressing ONE new shiny gold star sticker onto the tiny oak tree with one wing, beaming. A tiny toy wooden treasure chest with brass corners rests on the bench beside him, with no writing on it. Just right of the bench, below the map and well inside the picture (not at its edge), a big round window shows the sunset outside, big and easy to see: a glowing peach, pink and lilac sky with the round orange sun sinking low on the far horizon. Plain wooden floor below.",
+          "also": [
+            "file:design/adventure/refs/ref-map.webp"
+          ]
+        }
+      }
+    },
+    {
+      "id": "thea",
+      "light": "day",
+      "lineups": [
+        "thea"
+      ],
+      "talk": true,
+      "bible": "PELLY: Pelly the pelican, a big white clay pelican (a real pelican, not a duck) with a very long, straight peach-orange bill, longer than her head, and a big, soft, lumpy peach pouch hanging under it, a small round light-blue postal cap with a little white envelope badge (no anchor), no scarf, and a brown leather mail satchel across her body; about twice Echo's height. THEA: Thea the hedgehog, a small, round, friendly clay hedgehog (a girl) about one and a quarter times Echo's height, standing on her two short back legs: soft rounded caramel-brown spines all over her back and the top of her head (soft clay bumps, never sharp), a pale cream face and tummy, a pointy little round black nose, big shiny dark friendly eyes, small pink cheeks, small round ears, four little pink paws, and a sky-blue scarf with white polka dots; no hat, no shoes. The place in this story is Thea's cottage in the meadow and the farm field over the hill. THEA'S COTTAGE: a tiny round cottage tucked into a grassy bank among wildflowers, with round cream walls, a small round mossy-green front door, one round window with a little red flower box, and a low, rounded, golden thatched roof of thick straw; on one side of the roof the wind has blown a round hole in the thatch, as big as Thea, with a few loose straws sticking up around it. Inside, under the hole, stands a little wooden table with a teacup. A narrow winding lane leads to the cottage through a small, thick, leafy green thicket of round bushes. Over a gentle green hill lies the farm field: short golden stubble, a little red barn with a white door, a low wooden gate, a bramble bush by the gate with soft green leaves, and neat bundles of golden straw lying in the field. Purple thistles grow along the hill path. The thermos, the barn and the gate have no letters, numbers or writing anywhere on them.",
+      "who": {
+        "THEA": {
+          "re": "\\bThea\\b",
+          "label": "Thea the hedgehog"
+        }
+      },
+      "home": "A wide picture for a game card. In a sunny green meadow full of wildflowers, Thea the hedgehog in her blue polka-dot scarf stands on the low golden thatched roof of her tiny round cottage, just right of the middle, holding up a bundle of golden straw tied with red string, beaming. Echo leaps up beside the cottage just left of the middle, wings up, cheering. Echo and Thea are both in the middle band of the picture: their tops below 25% from the top and their bottoms above 75% from the top. Only Echo and Thea appear: no other characters. No writing anywhere.",
+      "chars": [
+        {
+          "key": "thea",
+          "h": 1.25,
+          "prompt": "Thea the hedgehog, full body, standing on her two short back legs, facing forward, waving one little paw and smiling: a small, round, friendly clay hedgehog (a girl) about one and a quarter times Echo's height, standing on her two short back legs: soft rounded caramel-brown spines all over her back and the top of her head (soft clay bumps, never sharp), a pale cream face and tummy, a pointy little round black nose, big shiny dark friendly eyes, small pink cheeks, small round ears, four little pink paws, and a sky-blue scarf with white polka dots; no hat, no shoes."
+        }
+      ],
+      "scenes": {
+        "s01": {
+          "light": "day",
+          "picture": "A bright sunny morning at the round blue front door of Echo's cottage (ECHO'S COTTAGE, exactly as in the attached earlier picture). Pelly the pelican stands on the left of the door and proudly pulls a big blue thermos (a tall, round, sky-blue bottle with a cup-shaped silver lid, plain, with no writing or label) out of her beak pouch, the thermos balanced on the tip of her bill as if it were a letter, looking very pleased with herself. Echo stands just right of the middle on the wide doorstep, laughing, wings up.",
+          "also": [
+            "file:public/assets/adventure/lighthouse/s01.webp"
+          ]
+        },
+        "s02": {
+          "light": "day",
+          "picture": "Close up on the porch of Echo's cottage on a sunny morning. Pelly the pelican's big white wing (only her wing and the edge of her body, from the left edge) holds out a cream paper letter in the upper middle of the picture. On the letter is a child's crayon drawing of a smiling brown hedgehog in a blue scarf beside a little round cottage with a golden straw roof that has a big round hole in it, a few crayon straws flying away on curly crayon wind lines, and a big round crayon sun: only crayon lines, no writing at all. Echo stands just left of the middle, leaning in toward the letter, eyes wide with excitement, the big blue thermos (sky-blue with a silver cup-shaped lid, no writing) standing on the porch beside him.",
+          "also": [
+            "file:public/assets/adventure/lighthouse/s02.webp"
+          ]
+        },
+        "s03": {
+          "light": "day",
+          "picture": "A bright sunny morning on the narrow winding lane through the meadow. The lane runs into a small, thick, leafy green thicket of round bushes in the middle of the picture, and the path goes right through it; beyond the thicket, small but easy to see, Thea's tiny round cottage with its golden thatched roof sits in a grassy bank among wildflowers. Echo hurries along the lane toward the thicket in the lower middle, wings out, happy and excited. No one else is in the picture."
+        },
+        "s04": {
+          "light": "indoor",
+          "picture": "Inside THEA'S COTTAGE on a sunny morning. Up in the low round ceiling there is a big round hole in the golden thatch, with soft blue sky and a few loose straws showing through it, and a thin trickle of a few last raindrops falls from it. Thea the hedgehog stands on her little wooden table in the middle, holding up one tiny silver thimble in her paw to catch a falling raindrop, very proud and silly, her teacup beside her full to the brim with water. Echo stands on the floor on the left, wings over his beak, giggling. Small puddles sit on the wooden floor."
+        },
+        "s05": {
+          "light": "day",
+          "picture": "Outside Thea's tiny round cottage on a sunny morning, the round hole in its golden thatched roof easy to see. Thea the hedgehog stands in the middle with one paw held out, her thumb pointing over the gentle green hill, a big happy idea on her face. Over the hill, small but easy to see, lies the farm field with its little red barn and neat bundles of golden straw. Echo stands on the left, looking where Thea points, eyes wide and excited."
+        },
+        "s06": {
+          "light": "day",
+          "picture": "On the hill path on a sunny morning, purple thistles growing along it. One big, fuzzy, round purple thistle flower on a tall green stem stands in the middle of the picture, big and easy to see, and its soft purple fluff tickles Echo's wing as he walks past in the lower middle; Echo giggles, scrunching up his face, with a few little curvy wiggle lines by his wing. Thea the hedgehog walks just behind him on the left, laughing. The red barn shows small over the top of the hill."
+        },
+        "s07": {
+          "light": "day",
+          "picture": "At the low wooden gate of the farm field on a sunny morning, the little red barn behind. Beside the gate grows a bramble bush with soft green leaves, and on its nearest long stem sticks out one single small rounded clay thorn, big and easy to see, smooth and cartoony, not sharp-looking. Echo steps carefully around the thorn in the lower middle, tiptoeing and smiling, and behind him in the golden field Thea the hedgehog happily lifts a big bundle of golden straw in her arms, more neat bundles lying on the field around her."
+        },
+        "s08": {
+          "light": "day",
+          "picture": "In the golden farm field on a sunny morning, the little red barn behind. Echo and Thea the hedgehog sit side by side in the middle beside three neat bundles of golden straw, tying each bundle with a thin piece of red string in a little bow; one long thin red string trails from Echo's wing. Both are smiling and easy to see."
+        },
+        "e01": {
+          "light": "day",
+          "picture": "Back at Thea's tiny round cottage on a bright sunny day. Thea the hedgehog stands on top of the low golden thatched roof, beside the round hole, pressing a fresh bundle of golden straw into it and tapping it down with a little wooden mallet, thump, thump, with a few soft curvy motion lines around the mallet; the hole is already half filled. Echo stands on a wooden ladder leaning against the cottage just left of the middle, handing up another bundle of straw, beaming. Two more straw bundles tied with red string lie on the grass below."
+        },
+        "e02": {
+          "light": "afternoon",
+          "picture": "At Thea's tiny round cottage on a warm, sunny afternoon. The last bundle of golden straw lands on the roof with a soft little puff of straw dust and a few curvy motion lines, and Thea the hedgehog, up on the roof, pats it neatly into place with both paws; the round hole is now completely gone and the thatched roof is whole, thick and neat. Echo stands on the grass below on the left, wings up, cheering."
+        },
+        "e03": {
+          "light": "afternoon",
+          "picture": "In front of Thea's tiny round cottage in the warm late afternoon, its golden thatched roof whole and thick again. Thea the hedgehog sits on a little wooden bench in the middle and pours warm brown cocoa from the big blue thermos (sky-blue with a silver lid, no writing) into a small round mug, a soft curl of steam rising from it. Echo sits beside her on the bench just left of the middle, holding his own steaming mug with both wings, beaming. Pelly the pelican stands on the right, holding a mug too and smiling."
+        },
+        "e04": {
+          "light": "evening",
+          "picture": "Evening inside Echo's cozy round cottage, lamp-lit: the whole helper map (THE HELPER MAP, the same map as in the attached earlier picture, seen whole as it is there, with its frame and its four brass pins in view) pinned to the wall, filling the upper middle of the picture, with no writing anywhere on it. Most of the map is still covered by soft white puffy clouds. One soft white cloud has just drifted off to one side, uncovering a new place: a tiny round cottage with a golden thatched roof in a green meadow, beside a tiny red barn. There is NO star of any kind on the map or anywhere else in the picture, except the ONE new gold star Echo is pressing on. A low wooden bench stands under the map, a little left of the middle; Echo stands on the bench, on tiptoe, pressing ONE new shiny gold star sticker onto the tiny cottage with one wing, beaming. A small bundle of golden straw tied with red string rests on the bench beside him. Just right of the bench, below the map and well inside the picture (not at its edge), a big round window shows the sunset outside, big and easy to see: a glowing peach, pink and lilac sky with the round orange sun sinking low on the far horizon. Plain wooden floor below.",
+          "also": [
+            "file:design/adventure/refs/ref-map.webp"
+          ]
+        }
+      }
     }
   ],
   "arcade": "A wide picture for a button. Echo, cheerful and waving, in the very middle of the picture, with fun game things tumbling around him in the air: a juicy watermelon slice, an orange basketball, a black-and-white piano key, a soccer ball, and a cartoon dinosaur bone. A soft, bright sky-blue background with a few puffy clouds. Echo fills the middle third of the picture's width and the middle of its height; the game things stay around him. No text.",

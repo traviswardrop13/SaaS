@@ -4148,8 +4148,14 @@ their sound on every page, three sayings).
   Raft", "Ruby's Nest", "Rex's Radio Show", "Remi's Red Sleigh", "Rina's
   Rainbow Reef", "Ravi's Rain Cloud"; S "Sami's Soccer Game", "Cecil's
   Circus Socks", "Suki's Super Soup", "Sadie's Sailboat", "Sasha's
-  Sunflowers", "Simon's Seesaw". Every key keeps TALK1's rule (the sound
-  before a vowel, by `booklex.json`; for R no second R).
+  Sunflowers", "Simon's Seesaw". **And one each for the other eight Day 1
+  sounds (25 Nov 2026, the same night)**: L "Lola's Lemonade Stand", Z
+  "Zola's Zeppelin", F "Felix's Fun Fair", K "Coco's Carousel", G "Gabby's
+  Golf Game", SH "Shona's Shower Day", CH "Chico's Treasure Chest", TH
+  "Thea's Thatched Roof". So every sound with a Day 1 story now has at least
+  one after Day 14 (P, B, M, N, T, D, V, J and the voiced TH still have none).
+  Every key keeps TALK1's rule (the sound before a vowel, by `booklex.json`;
+  for R no second R).
 - **Each is off until `ready: true`**: its pictures drawn and checked
   (`gen-adventure.mjs --only <id>`, `cut-adventure.py <id>`, prompts in
   `adventure-prompts.json`) AND Rachel has read its words. Not ready: never
@@ -4157,7 +4163,7 @@ their sound on every page, three sayings).
   `false`.
 - **Whose:** the sound Day 1's slot reads (`_talkFor(rotSounds())`,
   homework first), so `TALK_ON` and `sona.talkoff` turn these off too; a
-  sound with none (L, Z, F, K... today) keeps the game of the day.
+  sound with none (P, B, M... today) keeps the game of the day.
 - **The calendar is CAL1's:** one a calendar day, the next one not finished
   after the last one finished, a skipped one comes back after the others;
   when every one is finished, the game of the day again. Finished ones are

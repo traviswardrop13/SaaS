@@ -6298,6 +6298,22 @@
       line: "Sasha the squirrel planted sunflower seeds, but nothing grows. Help them grow!", ready: false },
     { id: "simon", sound: "S", hero: "simon", name: "Simon's Seesaw", title: "Simon's Seesaw",
       line: "Simon the sloth's seesaw is broken, and nobody can play. Help fix it!", ready: false },
+    { id: "lola", sound: "L", hero: "lola", name: "Lola's Lemonade Stand", title: "Lola's Lemonade Stand",
+      line: "Lola the llama's lemons rolled away before her lemonade stand opens. Help find them!", ready: false },
+    { id: "zola", sound: "Z", hero: "zola", name: "Zola's Zeppelin", title: "Zola's Zeppelin",
+      line: "Zola the koala's zeppelin went flat before the big ride. Help it fly!", ready: false },
+    { id: "felix", sound: "F", hero: "felix", name: "Felix's Fun Fair", title: "Felix's Fun Fair",
+      line: "The big wheel at Felix the ferret's fair is stuck. Help get it turning!", ready: false },
+    { id: "coco", sound: "K", hero: "coco", name: "Coco's Carousel", title: "Coco's Carousel",
+      line: "Coco the kangaroo's carousel stopped, because its key is lost. Help find it!", ready: false },
+    { id: "gabby", sound: "G", hero: "gabby", name: "Gabby's Golf Game", title: "Gabby's Golf Game",
+      line: "A gust of wind blew away Gabby the gorilla's golf balls. Help find them all!", ready: false },
+    { id: "shona", sound: "SH", hero: "shona", name: "Shona's Shower Day", title: "Shona's Shower Day",
+      line: "Shona the sheep rolled in the mud before her farm party. Help wash her clean!", ready: false },
+    { id: "chico", sound: "CH", hero: "chico", name: "Chico's Treasure Chest", title: "Chico's Treasure Chest",
+      line: "Chico the chinchilla hid a treasure chest for a party, then forgot where. Help find it!", ready: false },
+    { id: "thea", sound: "TH", hero: "thea", name: "Thea's Thatched Roof", title: "Thea's Thatched Roof",
+      line: "The wind blew a hole in Thea the hedgehog's straw roof. Help her fix it!", ready: false },
   ];
   function _moreById(id) { for (let i = 0; i < STORY_TALK_MORE.length; i++) if (STORY_TALK_MORE[i].id === id) return STORY_TALK_MORE[i]; return null; }
   // the ready later stories for the child playing now, in order: none without
