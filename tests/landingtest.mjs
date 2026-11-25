@@ -428,6 +428,12 @@ charterReply = null;
       document.getElementById("oEmail").placeholder === "you@example.com" &&
       document.querySelectorAll("main section").length === 1 && !document.querySelector("main .lede, main .trust, main .point");
   }));
+  // Travis, 25 Nov 2026: "I didn't want to change the opt-in page. Just have
+  // that be get started." The big capital button is /plans' alone.
+  ok("/'s button says Get Started as written, not the plans page's big capital button", await page.evaluate(() => {
+    const cs = getComputedStyle(document.getElementById("oGo"));
+    return cs.textTransform === "none" && parseFloat(cs.minHeight || "0") < 62 && !document.querySelector(".hero.hero-q, #heroQuote");
+  }));
   const pixel = await page.evaluate(() => (window.fbq?.queue || []).map(args => Array.from(args)));
   const init = pixel.findIndex(args => args[0] === "init");
   const quiet = pixel.findIndex(args => args[0] === "set" && args[1] === "autoConfig" && args[2] === false);
@@ -529,14 +535,14 @@ const keepTracks = () => Object.defineProperty(window, "sonaTrack", { configurab
     document.getElementById("fTerms").hidden && !document.getElementById("proWas").hidden &&
     document.querySelector("#planPro .price").innerText.replace(/\s+/g, " ").trim() === "$19.99 a month $9.99 a month" &&
     document.getElementById("proTerms").textContent === "Cancel anytime." &&
-    document.getElementById("fGo").textContent === "Get Sona Pro at half off" && document.getElementById("finalGo").textContent === "Get Sona Pro at half off" &&
-    document.getElementById("proGo").textContent === "Get Sona Pro for $9.99" && !/free trial|days free/i.test(document.getElementById("pricing").querySelector("#planPro").innerText.replace(/no free trial/gi, ""))));
+    document.getElementById("fGo").textContent === "Get Sona Pro at 50% off" && document.getElementById("finalGo").textContent === "Get Sona Pro at 50% off" &&
+    document.getElementById("proGo").textContent === "Get Sona Pro" && !/free trial|days free/i.test(document.getElementById("pricing").querySelector("#planPro").innerText.replace(/no free trial/gi, ""))));
   ok("…with the email already in its box", await page.inputValue("#fEmail") === "bf@clinic.org");
   posts = [];
   await page.evaluate(watchLeaving);
   await page.click("#fGo");
   const leftBf = await settles(page, () => window.__left.length === 1) ? (await page.evaluate(() => window.__left))[0] : null;
-  ok("…and \"Get Sona Pro at half off\" opens Stripe's checkout at once, as InitiateCheckout, never a second Lead",
+  ok("…and \"Get Sona Pro at 50% off\" opens Stripe's checkout at once, as InitiateCheckout, never a second Lead",
     !!leftBf && leftBf.to === STRIPE + "?who=new" && JSON.stringify(leftBf.track) === '["InitiateCheckout"]' && leftBf.btn === "Opening checkout…" && leftBf.off &&
     posts.length === 1 && posts[0].path === "/api/slp/checkout", { leftBf, posts });
   ok("…no page errors", errors.length === 0, errors);
@@ -578,7 +584,7 @@ const keepTracks = () => Object.defineProperty(window, "sonaTrack", { configurab
 {
   const { context, page, errors } = await fresh({ path: "/plans", now: "2026-11-26T19:00:00Z" });
   ok("/plans during Black Friday shows the deal too, since every Sona Pro checkout this week is the deal", await page.evaluate(() =>
-    !document.getElementById("bfBar").hidden && !document.getElementById("bfDeal").hidden && document.getElementById("fGo").textContent === "Get Sona Pro at half off"));
+    !document.getElementById("bfBar").hidden && !document.getElementById("bfDeal").hidden && document.getElementById("fGo").textContent === "Get Sona Pro at 50% off"));
   ok("…no page errors", errors.length === 0, errors);
   await context.close();
 }

@@ -3250,15 +3250,19 @@ in", TRIALGO1's `sona.slp.wantplan` from /plans, the trial form's email).
   inbox.
 - The Pixel's Lead (InitiateCheckout after the opt-in's Lead) fires as the
   page leaves for Stripe. Under the button: "Secure checkout with Stripe."
-- **The same day, on /plans:** the headline "Speech homework kids actually
-  do." (title, share card `og-slp.png?v=5`), the hero button the form's
-  width in capitals, Black Friday's eyebrow "Black Friday · Sona Pro half
-  off" and button "Get Sona Pro at half off", Lindi's App Store review word
-  for word beside the hero (a real review only), the Sona Pro lines (Sona
-  Lite, unlimited accounts for clients, the SLP dashboard, Share & earn with
-  a gift icon), "Cancel anytime." under both plan buttons, the two-line
-  Black Friday box, and no parents' price box or "Good to know" section.
-  **Rachel's:** the headline and the review on a clinicians' page.
+- **The same day, on /plans:** the headline "Speech homework kids ask for."
+  (title, share card `og-slp.png?v=6`, which the opt-in pages share), the
+  hero button the form's width in capitals (`#signup .btn`, /plans only:
+  Travis, "I didn't want to change the opt-in page", so `/` and
+  `/blackfriday` keep their plain "Get Started"), Black Friday's eyebrow
+  "Black Friday · Sona Pro half off", the hero and closing buttons "Get Sona
+  Pro at 50% off" and the card's "Get Sona Pro", Lindi's App Store review
+  beside the hero (a real review only: her title and her first words, cut
+  at "…" to two lines, "Lindi, parent · App Store review"), the Sona Pro
+  lines (Sona Lite, unlimited accounts for clients, the SLP dashboard, Share
+  & earn with a gift icon), "Cancel anytime." under both plan buttons, the
+  two-line Black Friday box, and no parents' price box or "Good to know"
+  section. **Rachel's:** the headline and the review on a clinicians' page.
 `caseloadtest`, `landingtest`, `shiptest`, `slpapi`, `telemetrytest` play it.
 
 ## The app lives at app.speaksona.com (APPHOST1, 17 Nov 2026)

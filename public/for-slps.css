@@ -84,8 +84,8 @@ header {
 .hero {
   display: grid;
   grid-template-columns: minmax(0, 1.06fr) minmax(0, .94fr);
-  grid-template-areas: "intro art" "signup art" "signup quote";
-  grid-template-rows: auto 1fr auto;
+  grid-template-areas: "intro art" "signup art";
+  grid-template-rows: auto 1fr;
   align-items: start;
   gap: 20px clamp(20px, 3vw, 42px);
   padding-block: clamp(30px, 5vw, 62px) 47px;
@@ -122,9 +122,13 @@ header {
 .signup select { padding-right: 5px; }
 .signup input::placeholder { color: #73758a; }
 .signup select:invalid { color: #686980; }
-/* THE BUTTON, BIG (Travis, 25 Nov 2026, from GoHighLevel's Black Friday
-   page): the width of the form, taller, in capitals, the deal in its words. */
-.signup .btn { align-self: stretch; margin-top: 3px; min-height: 62px; padding-inline: 18px; border-radius: 16px; font-size: 21px; letter-spacing: .02em; text-transform: uppercase; }
+.signup .btn { align-self: flex-start; margin-top: 3px; min-width: 146px; }
+/* /plans only (the opt-in pages share this sheet and keep their button):
+   THE BUTTON, BIG (Travis, 25 Nov 2026, from GoHighLevel's Black Friday
+   page): the width of the form, taller, in capitals, the deal in its words;
+   and Lindi's review under the form. */
+#signup .btn { align-self: stretch; min-height: 62px; padding-inline: 18px; border-radius: 16px; font-size: 21px; letter-spacing: .02em; text-transform: uppercase; }
+.hero.hero-q { grid-template-areas: "intro art" "signup art" "signup quote"; grid-template-rows: auto 1fr auto; }
 .eyebrow span { color: var(--ink); background: var(--butter); padding: 2px 7px; border-radius: 6px; }
 /* Lindi's review (25 Nov 2026) */
 .hero-quote { grid-area: quote; justify-self: center; width: min(100%, 470px); margin: 0; padding: 18px 20px; border-radius: 18px; background: var(--mint); color: var(--ink); }
@@ -351,7 +355,8 @@ a.btn { text-decoration: none; }
 }
 @media (max-width: 700px) {
   .hero, .kidside .in, .privacy { grid-template-columns: minmax(0, 1fr); }
-  .hero { grid-template-areas: "intro" "art" "signup" "quote"; grid-template-rows: auto; justify-items: center; gap: 17px; padding-block: 23px 25px; }
+  .hero { grid-template-areas: "intro" "art" "signup"; grid-template-rows: auto; justify-items: center; gap: 17px; padding-block: 23px 25px; }
+  .hero.hero-q { grid-template-areas: "intro" "art" "signup" "quote"; grid-template-rows: auto; }
   .hero-intro { gap: 8px; justify-items: center; text-align: center; }
   .hero h1 { max-width: 480px; font-size: clamp(2.55rem, 8vw, 4rem); }
   .hero-l { gap: 13px; }

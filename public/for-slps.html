@@ -22,7 +22,7 @@
 })();
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Sona for speech therapists — speech homework kids actually do</title>
+  <title>Sona for speech therapists — speech homework kids ask for</title>
   <meta name="description" content="Sona Pro for speech therapists, 14 days free. Play Sona games in your sessions, share the app with clients, and see who practiced at home. Built with Rachel, MS, CF-SLP." />
   <!-- THE CLINICIANS' PLANS PAGE (17 Nov 2026, the free packet left out on
        20 Nov 2026). Served at /plans and /checkout (next.config.js); since
@@ -39,16 +39,16 @@
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Sona" />
   <meta property="og:url" content="https://www.speaksona.com/plans" />
-  <meta property="og:title" content="Speech homework kids actually do." />
+  <meta property="og:title" content="Speech homework kids ask for." />
   <meta property="og:description" content="Sona Pro for speech therapists: play Sona games in your sessions, share the app with clients, and see who practiced at home. 14 days free." />
-  <meta property="og:image" content="https://speaksona.com/og-slp.png?v=5" />
+  <meta property="og:image" content="https://speaksona.com/og-slp.png?v=6" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta property="og:image:alt" content="Sona for speech therapists." />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Speech homework kids actually do." />
+  <meta name="twitter:title" content="Speech homework kids ask for." />
   <meta name="twitter:description" content="Sona Pro for speech therapists: play Sona games in your sessions, share the app with clients, and see who practiced at home. 14 days free." />
-  <meta name="twitter:image" content="https://speaksona.com/og-slp.png?v=5" />
+  <meta name="twitter:image" content="https://speaksona.com/og-slp.png?v=6" />
 
   <!-- The bird with no card behind him. The home-screen icon keeps its
        background on purpose: iOS fills a transparent one with black. -->
@@ -95,13 +95,14 @@
   <div class="wrap in"><span><b>Black Friday:</b> Sona Pro is $9.99 a month for your first 3 months.</span><span class="cd-inline" id="bfLeft" role="timer"></span></div>
 </div>
 <section class="hero-band">
-  <div class="wrap hero">
+  <div class="wrap hero hero-q">
   <div class="hero-intro">
     <p class="eyebrow" id="heroEye">Sona for speech therapists</p>
     <!-- A HEADLINE THAT NAMES THE PROBLEM (Travis, 25 Nov 2026: "a more
          compelling headline", with GoHighLevel's Black Friday page to draw
-         on). The lede under it is unchanged ("sub headline is great"). -->
-    <h1>Speech homework kids <span>actually do.</span></h1>
+         on; then "speech homework kids ask for"). The lede under it is
+         unchanged ("sub headline is great"). -->
+    <h1>Speech homework kids <span>ask for.</span></h1>
     <p class="lede">Play Sona games in your sessions, share the app with clients, and see who practiced at home.</p>
   </div>
 
@@ -148,13 +149,16 @@
   </div>
 
   <!-- A PARENT'S OWN WORDS (Travis, 25 Nov 2026): Lindi's App Store review
-       of the family app, word for word, with the name she reviewed under.
-       A real review only; never one written for the page. -->
+       of the family app, her title and the start of her words, cut at the
+       "…" so it stays two lines on a phone ("Try to make it 2 lines"). Her
+       review goes on: "and thinks the games are fun so it's a win-win.
+       We're so glad we found it!" A real review only; never one written
+       for the page, and never a word of hers changed. -->
   <figure class="hero-quote" id="heroQuote">
     <div class="stars" aria-label="5 out of 5 stars">★★★★★</div>
     <p class="qt">Makes practicing fun!</p>
-    <blockquote><p>This app has been so helpful for my 3 year old. She has improved so much and thinks the games are fun so it&rsquo;s a win-win. We&rsquo;re so glad we found it!</p></blockquote>
-    <figcaption><b>Lindi W.</b>, parent &middot; App Store review</figcaption>
+    <blockquote><p>This app has been so helpful for my 3 year old. She has improved so much&hellip;</p></blockquote>
+    <figcaption><b>Lindi</b>, parent &middot; App Store review</figcaption>
   </figure>
 
   </div>
@@ -464,7 +468,7 @@
     var BF_ENDS_AT = Date.UTC(2026, 10, 30, 6, 59, 0);
     var BF = false, bfTimer = 0, bfWas = null;
     try { BF = Date.now() < BF_ENDS_AT; } catch (e) {}
-    var BF_LABEL = "Get Sona Pro at half off";
+    var BF_LABEL = "Get Sona Pro at 50% off";
     // (Travis, 25 Nov 2026) The deal's words are the card's own line and the
     // struck-out price; under the buttons, only "Cancel anytime."
     var proPrice = document.querySelector("#planPro .price b");
@@ -491,7 +495,7 @@
     }
     if (BF) {
       bfWas = bfWords();
-      LABEL = BF_LABEL; $("fGo").textContent = BF_LABEL; $("finalGo").textContent = BF_LABEL; $("proGo").textContent = "Get Sona Pro for $9.99";
+      LABEL = BF_LABEL; $("fGo").textContent = BF_LABEL; $("finalGo").textContent = BF_LABEL; $("proGo").textContent = "Get Sona Pro";
       $("fTerms").hidden = true; $("proWas").hidden = false; proPrice.textContent = "$9.99";
       $("bfBar").hidden = false; $("bfDeal").hidden = false;
       // GoHighLevel's way (Travis, 25 Nov 2026): the deal named over the headline.

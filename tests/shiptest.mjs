@@ -266,16 +266,19 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   const slpHeadline = (slps.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/) || ["", ""])[1]
     .replace(/<[^>]+>/g, "").replace(/&rsquo;/g, "’").replace(/\s+/g, " ").trim();
   ok("the clinician page's headline, tab title and shared card carry the new message",
-    // Travis, 25 Nov 2026: "a more compelling headline".
-    slpHeadline === "Speech homework kids actually do." &&
-    /<title>[^<]*speech homework kids actually do[^<]*<\/title>/i.test(slps) &&
-    /og:title" content="Speech homework kids actually do\."/.test(slps) &&
-    /twitter:title" content="Speech homework kids actually do\."/.test(slps));
-  // A parent's real App Store review, word for word (Travis, 25 Nov 2026).
-  ok("the clinician page carries Lindi's App Store review word for word, named as a parent's review",
+    // Travis, 25 Nov 2026: "a more compelling headline", then "speech
+    // homework kids ask for".
+    slpHeadline === "Speech homework kids ask for." &&
+    /<title>[^<]*speech homework kids ask for[^<]*<\/title>/i.test(slps) &&
+    /og:title" content="Speech homework kids ask for\."/.test(slps) &&
+    /twitter:title" content="Speech homework kids ask for\."/.test(slps));
+  // A parent's real App Store review (Travis, 25 Nov 2026): her own words,
+  // cut short at the "…" to two lines, never a word changed.
+  ok("the clinician page carries Lindi's App Store review in her own words, cut at an ellipsis, named as a parent's review",
     /<figure class="hero-quote" id="heroQuote">/.test(slps) &&
-    /<blockquote><p>This app has been so helpful for my 3 year old\. She has improved so much and thinks the games are fun so it&rsquo;s a win-win\. We&rsquo;re so glad we found it!<\/p><\/blockquote>/.test(slps) &&
-    /<figcaption><b>Lindi W\.<\/b>, parent &middot; App Store review<\/figcaption>/.test(slps));
+    /<p class="qt">Makes practicing fun!<\/p>/.test(slps) &&
+    /<blockquote><p>This app has been so helpful for my 3 year old\. She has improved so much&hellip;<\/p><\/blockquote>/.test(slps) &&
+    /<figcaption><b>Lindi<\/b>, parent &middot; App Store review<\/figcaption>/.test(slps));
   const slpLede = (slps.match(/<p class="lede">([\s\S]*?)<\/p>/) || ["", ""])[1];
   // Travis, 14 Nov 2026: a benefit "that is not like the community"; the
   // session-planning line waits until the planner is built.
@@ -560,7 +563,7 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     ok("…the Sona Pro price shows " + PRO.price + " struck out, then " + bfPrice + ", and the hero's terms line is hidden",
       pro.includes('<s class="was" id="proWas" hidden>' + PRO.price + ' a month</s> <b>' + PRO.price + '</b> a month') &&
       /\$\("fTerms"\)\.hidden = true; \$\("proWas"\)\.hidden = false; proPrice\.textContent = "\$9\.99";/.test(slps) &&
-      !/BF_TERMS|BF_PRO_TERMS/.test(slps) && /var BF_LABEL = "Get Sona Pro at half off";/.test(slps));
+      !/BF_TERMS|BF_PRO_TERMS/.test(slps) && /var BF_LABEL = "Get Sona Pro at 50% off";/.test(slps));
   }
   // 18 Nov 2026 (review): the pick is {plan, at}, written only once it is
   // acted on (a sent email, or a signed-in visitor), and counts for an hour.
