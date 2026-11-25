@@ -3140,6 +3140,35 @@ MAIL1, the CRM webhook, STRIPEHOOK1's events, GHLPRO1's checkout).
   rewrite) did the same until this shipped; remove it after, since a
   platform route runs before next.config's.
 
+## /plans' Sona Pro button goes straight to Stripe (BUYNOW1, 25 Nov 2026)
+Travis: "the button on the purchase page goes to a Stripe checkout. Not the
+SLP dashboard." This supersedes TRIALGO1 and SLPSITE1 for the Sona Pro
+buttons on `/plans` (and `/blackfriday/plans`, `/checkout`): no sign-in email
+first. Sona Clinic (while on sale) and the dashboard's own doors are unchanged.
+- **The page** (`buyNow` in `for-slps.html`): the email box and the button.
+  It keeps the email as a lead (`/api/lead`, role "slp", source
+  "plans-checkout", which gets no Black Friday email: they are buying), then
+  asks `/api/slp/buy` for the checkout and goes there (the pixel: Lead, or
+  InitiateCheckout after the opt-in). Nothing is remembered for the dashboard.
+- **`POST /api/slp/buy`** (`app/api/slp/buy/route.ts`): same origin, 10 an
+  hour per IP, a valid email. Already Sona Pro: 409 "sign in" and nothing
+  sold. Otherwise a Stripe checkout stamped `plan: slp-pro`, `slp: <email>`,
+  `source: plans` (and `ref`, `offer`) on the session and the subscription,
+  so `proStatus` finds it for that email; the 14-day trial only on Stripe's
+  word that the email never had one; Black Friday's coupon and no trial,
+  exactly as `/api/slp/plan`. Back to `/plans?bought={CHECKOUT_SESSION_ID}`.
+- **`GET /api/slp/buy?session=`**: only a checkout this route made
+  (`source: plans`). Finished: the plan mirror is written
+  (`activateFromSession`) and ONE sign-in link goes to that email
+  (`slpbuymail:<sid>`, the signed pending sign-up, source "plans-buy", the
+  `ref` kept), and only the email's domain is said back. The page says "Sona
+  Pro is on. We emailed you a sign-in link …" and fires StartTrial (a trial)
+  or Purchase; unfinished, it points to the sign-in page.
+- **The trade-off, Travis's to know:** anyone can open a checkout for any
+  email (as on Stripe's own hosted pages); paying for someone else's address
+  gives the dashboard to that inbox, never to the payer. The inbox still
+  proves who signs in. `caseloadtest` (BUYNOW1) and `landingtest` play it.
+
 ## Black Friday 2026: Sona Pro $9.99 for 3 months, until Sunday 11:59 PM Mountain (BF1, 24 Nov 2026)
 Travis: "a fresh optin and website to use this week for black friday! with
 a countdown to sunday at 11:59 pm"; asked, he chose **50% off Sona Pro for 3
@@ -3196,6 +3225,15 @@ months** and **Mountain time**, then "but no free trial on the promo".
   there's no free trial"), carries exactly one 🎉 and one to three "!"**
   ("a little more excitement"). Resend sends them (GHLEXIT1). Every word is
   Travis's; `bfmailtest` plays it.
+  **Wednesday's email goes only by a press** (Travis, 25 Nov 2026: "all of
+  my SLP emails, I want to send them today's email too. not yet tho jsut
+  get it ready"): "🎉 Black Friday came early" (`BF_MANUAL_DAYS`, never the
+  cron's). /leads.html's "Black Friday email" card checks first
+  (`GET /api/founders/bf-send`: how many would get today's email, nothing
+  sent), then "Send it now to N" (POST, behind FOUNDER_KEY): the daily
+  run's own skips and once-a-day marks, so a second press or the next cron
+  never doubles it; it stops at about four minutes and says how many are
+  left, and pressing again carries on.
 - **for-slps.html's Black Friday mode is on wherever it is served (`/plans`,
   `/blackfriday/plans`, `/checkout`) until the end**, because every Sona Pro
   checkout until then is the deal: a navy bar with the time left, a line on

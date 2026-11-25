@@ -73,14 +73,14 @@ const BEFORE = Date.UTC(2026, 10, 26, 18, 0, 0), AFTER = C.BF_ENDS_AT + 1000;
 }
 // every email in the run: 50% off, no word of a trial, Sona Lite beside it,
 // one 🎉 and at most two "!", Rachel's credential (Travis, 25 Nov 2026)
-for (const [name, c] of [["opt-in", B.bfContent()], ...B.BF_DAYS.map((d) => [d, B.bfDayContent(d)])]) {
+for (const [name, c] of [["opt-in", B.bfContent()], ...B.BF_MANUAL_DAYS.concat(B.BF_DAYS).map((d) => [d, B.bfDayContent(d)])]) {
   const all = [c.subject, c.preview, ...c.paras, c.button, ...c.after].join(" ");
   ok(name + ": 50% off, no trial, Sona Lite beside it, one 🎉, at most two !",
     /50% off/.test(all) && !/free trial|no trial|half off/i.test(all) && all.includes("Sona Lite") &&
     (all.match(/🎉/g) || []).length === 1 && (all.match(/!/g) || []).length >= 1 && (all.match(/!/g) || []).length <= 3 &&
     !/say their sound/i.test(all), all);
 }
-ok("no email on Wednesday or Monday", B.bfDayContent("2026-11-25") === null && B.bfDayContent("2026-11-30") === null);
+ok("no email on Tuesday or Monday", B.bfDayContent("2026-11-24") === null && B.bfDayContent("2026-11-30") === null);
 ok("the day is the Mountain date", B.bfDay(Date.UTC(2026, 10, 27, 5, 0, 0)) === "2026-11-26" && B.bfDay(Date.UTC(2026, 10, 27, 16, 0, 0)) === "2026-11-27");
 {
   // the daily run: SLPs only, once a day, skipping the unsubscribed, a live
@@ -116,8 +116,39 @@ ok("the day is the Mountain date", B.bfDay(Date.UTC(2026, 10, 27, 5, 0, 0)) === 
   ok("the daily cron runs it before the welcome batch", /runBfDaily\(everyone/.test(cron) && cron.indexOf("runBfDaily(") < cron.indexOf("runDue(undefined"));
 }
 {
+  // TODAY'S EMAIL BY A FOUNDER'S PRESS (Wednesday): never the cron's; a check
+  // sends nothing; a send goes once an address; a second press sends nothing
+  const WED = Date.UTC(2026, 10, 25, 20, 0, 0);
+  const s = store(["gone@x.org"]);
+  const base = s.cmd;
+  s.cmd = async (a) => a[0] === "GET" ? (s.kv.has(a[1]) ? s.kv.get(a[1]) : null) : base(a);
+  const list = async () => [{ email: "a@x.org", role: "slp" }, { email: "b@x.org", role: "slp" }, { email: "gone@x.org", role: "slp" }, { email: "mom@x.org", role: "parent" }];
+  sent.length = 0;
+  const cron = await B.runBfDaily(list, s.cmd, fakeFetch(), WED, { pauseMs: 0 });
+  ok("the cron sends nothing on Wednesday", cron.stopped === "off" && sent.length === 0, cron);
+  const dry = await B.runBfDaily(list, s.cmd, fakeFetch(), WED, { pauseMs: 0, manual: true, dry: true });
+  ok("a check counts who would get it and sends nothing", dry.left === 2 && dry.skipped === 1 && dry.sent === 0 && sent.length === 0 && dry.subject === B.bfDayContent("2026-11-25").subject, dry);
+  const go = await B.runBfDaily(list, s.cmd, fakeFetch(), WED, { pauseMs: 0, manual: true });
+  ok("the press sends Wednesday's email to each SLP once", go.sent === 2 && sent.length === 2 && sent.every((x) => x.body.subject === B.bfDayContent("2026-11-25").subject), go);
+  sent.length = 0;
+  const again = await B.runBfDaily(list, s.cmd, fakeFetch(), WED + 60000, { pauseMs: 0, manual: true });
+  const check = await B.runBfDaily(list, s.cmd, fakeFetch(), WED + 60000, { pauseMs: 0, manual: true, dry: true });
+  ok("a second press sends nothing, and a check says nobody is left", again.sent === 0 && sent.length === 0 && check.left === 0, { again, check });
+  sent.length = 0;
+  const late = await B.runBfDaily(list, store().cmd, fakeFetch(), WED, { pauseMs: 0, manual: true, deadline: Date.now() - 1 });
+  ok("past its time a press sends nothing and counts who is left", late.sent === 0 && late.left === 3 && late.stopped === "time" && sent.length === 0, late);
+  const cronLate = await B.runBfDaily(async () => [{ email: "c@x.org", role: "slp" }, { email: "d@x.org", role: "slp" }], store().cmd, fakeFetch(), Date.UTC(2026, 10, 27, 16, 0, 0), { pauseMs: 0, deadline: Date.now() - 1 });
+  ok("past its time the cron stops at once, counting nobody (the welcome emails go next)", cronLate.sent === 0 && cronLate.left === 0 && cronLate.more === true && cronLate.stopped === "time", cronLate);
+  const page0 = readFileSync(path.join(REPO, "public/leads.html"), "utf8");
+  ok("a check that ran out of time still offers Send", /if \(!j\.left && !j\.more\)/.test(page0) && /Send to whoever is left/.test(page0));
+  const route = readFileSync(path.join(REPO, "app/api/founders/bf-send/route.ts"), "utf8");
+  ok("the founder route is behind the founder key, GET checks and POST sends", /founderGate\(req\)/.test(route) && /dry: true/.test(route) && (route.match(/founderGate/g) || []).length >= 3);
+  const page = readFileSync(path.join(REPO, "public/leads.html"), "utf8");
+  ok("/leads.html checks before it sends", /id="bfCheck"/.test(page) && /id="bfSend" type="button" hidden/.test(page) && /method: "POST"[^\n]*bf-send|bf-send[^\n]*method: "POST"/.test(page));
+}
+{
   const route = readFileSync(path.join(REPO, "app/api/lead/route.ts"), "utf8");
-  ok("/api/lead sends it for a speech therapist's lead only", /if \(lead\.role === "slp" && kvConfigured\(\)\) \{\s*try \{ await sendBfEmail\(email, kvCmd, fetch\); \}/.test(route));
+  ok("/api/lead sends it for a speech therapist's lead only", /if \(lead\.role === "slp" && lead\.source !== "plans-checkout" && kvConfigured\(\)\) \{\s*try \{ await sendBfEmail\(email, kvCmd, fetch\); \}/.test(route));
 }
 console.log(fails ? fails + " FAILED" : "ALL PASS");
 process.exit(fails ? 1 : 0);

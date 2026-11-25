@@ -70,8 +70,26 @@ export function bfContent(): Content {
  * Null on any other day.
  */
 export const BF_DAYS = ["2026-11-26", "2026-11-27", "2026-11-28", "2026-11-29"];
+/**
+ * Days whose email only a founder's press sends (Travis, 25 Nov 2026: "I want
+ * to send them today's email too. not yet tho just get it ready"): the daily
+ * cron never sends these, /leads.html's Black Friday button does.
+ */
+export const BF_MANUAL_DAYS = ["2026-11-25"];
 export function bfDayContent(day: string): Content | null {
   const after = ["Questions? Just reply to this email."];
+  if (day === "2026-11-25") return {
+    subject: "🎉 Black Friday came early: Sona Pro is 50% off",
+    preview: `${DEAL}. Through Sunday.`,
+    paras: [
+      "Hi! Black Friday came early at Sona.",
+      `This week only, Sona Pro is 50% off: ${DEAL}.`,
+      VS_LITE,
+      "Get in while the offer is here!",
+      ENDS,
+    ],
+    button: "Get 50% off Sona Pro", after,
+  };
   if (day === "2026-11-26") return {
     subject: "🎉 Happy Thanksgiving! Sona Pro is 50% off",
     preview: `${DEAL}. Through Sunday.`,
@@ -130,12 +148,15 @@ export function renderBf(unsubUrl: string, postal: string, c: Content = bfConten
     `<p style="margin:24px 0 16px;"><a href="${BF_PLANS_URL}" style="display:inline-block;background:#1d2b4f;color:#ffffff;text-decoration:none;font-weight:700;font-size:17px;padding:13px 26px;border-radius:12px;">${esc(c.button)}</a></p>` +
     c.after.map((p) => `<p ${P}>${esc(p)}</p>`).join("") +
     `<p style="margin:24px 0 16px;font-size:16px;line-height:1.55;color:#2b2b2b;">Rachel, MS, CF-SLP<br>Sona co-founder</p>` +
+    // six empty lines before the footer (Travis, 25 Nov 2026: "press enter like
+    // 6 times on each email"), so the unsubscribe link sits well below Rachel
+    `<div style="height:150px;line-height:150px;font-size:1px;">&nbsp;</div>` +
     `<p style="margin:0;font-size:12px;line-height:1.5;color:#8a8a8a;">You’re getting this because you gave Sona your email.<br>Sona · ${esc(postal)}<br><a href="${unsubUrl}" style="color:#8a8a8a;">Unsubscribe</a></p>` +
     `</div></body></html>`;
   const text =
     c.paras.join("\n\n") + `\n\n${c.button}: ${BF_PLANS_URL}\n\n` +
     c.after.join("\n\n") + "\n\n" +
-    "Rachel, MS, CF-SLP\nSona co-founder\n" +
+    "Rachel, MS, CF-SLP\nSona co-founder\n\n\n\n\n\n\n" +
     `--\nYou’re getting this because you gave Sona your email.\nSona · ${postal}\nUnsubscribe: ${unsubUrl}\n`;
   return { subject: c.subject, html, text };
 }
@@ -183,6 +204,8 @@ export function bfDay(now: number): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Denver", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(now));
 }
 
+export type BfRun = { day: string; subject?: string; sent: number; skipped: number; failed: number; left: number; more?: boolean; stopped?: string };
+
 const LIVE = new Set(["active", "trialing", "past_due"]);
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -199,18 +222,24 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 export async function runBfDaily(
   list: () => Promise<{ email: string; role?: unknown }[]>,
   kv: Kv = kvCmd, f: Fetch = fetch, now: number = Date.now(),
-  opts: { deadline?: number; pauseMs?: number } = {},
-): Promise<{ day: string; sent: number; skipped: number; failed: number; stopped?: string }> {
+  opts: { deadline?: number; pauseMs?: number; manual?: boolean; dry?: boolean } = {},
+): Promise<BfRun> {
   const day = bfDay(now);
-  const out: { day: string; sent: number; skipped: number; failed: number; stopped?: string } = { day, sent: 0, skipped: 0, failed: 0 };
-  const c = bfDayContent(day);
+  const out: BfRun = { day, sent: 0, skipped: 0, failed: 0, left: 0 };
+  // the cron sends Thursday to Sunday; a founder's press may also send a manual day
+  const ok = BF_DAYS.includes(day) || (opts.manual === true && BF_MANUAL_DAYS.includes(day));
+  const c = ok ? bfDayContent(day) : null;
   const cfg = config();
   if (!c || !bfOn(now) || !cfg) { out.stopped = "off"; return out; }
+  out.subject = c.subject;
   const pause = opts.pauseMs ?? 550;
   const seen = new Set<string>();
   let busy = 0;
   for (const who of await list()) {
-    if (opts.deadline && Date.now() > opts.deadline) { out.stopped = "time"; break; }
+    if (!out.stopped && opts.deadline && Date.now() > opts.deadline) out.stopped = "time";
+    // past its time the cron stops at once (the welcome emails have the next
+    // slot); a founder's press counts who is left for 20 seconds more, then stops
+    if (out.stopped && (!opts.manual || (opts.deadline && Date.now() > opts.deadline + 20000))) { out.more = true; break; }
     const email = String(who.email || "").trim().toLowerCase();
     if (who.role !== "slp" || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || seen.has(email)) continue;
     seen.add(email);
@@ -222,13 +251,19 @@ export async function runBfDaily(
       const at = typeof optin === "string" ? Date.parse(optin) : NaN;
       if (Number.isFinite(at) && now - at < 12 * 3600 * 1000) { out.skipped++; continue; }
       const mark = `bfday:${day}:${email}`;
+      // past the deadline (or a busy Resend), only count who is still owed it
+      if (out.stopped || opts.dry) {
+        const had = await kv(["GET", mark]);
+        if (had === null || had === undefined) out.left++; else out.skipped++;
+        continue;
+      }
       if ((await kv(["SET", mark, "1", "NX", "EX", 10 * 86400])) !== "OK") { out.skipped++; continue; }
       if (pause) await sleep(pause);
       const r = await sendOne(email, c, `bfday-${day}-${email}`, f, cfg);
       if (!r.ok) {
         out.failed++;
         try { await kv(["DEL", mark]); } catch { /* tomorrow is another email */ }
-        if (r.status === 429 && ++busy >= 2) { out.stopped = "busy"; break; }
+        if (r.status === 429 && ++busy >= 2) { out.stopped = "busy"; out.left++; }
         continue;
       }
       out.sent++;

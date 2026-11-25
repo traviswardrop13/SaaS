@@ -91,6 +91,13 @@
     <!-- SHARE & EARN (REFER1, 20 Nov 2026): therapists whose link brought in
          another therapist. $8 a month for each one who pays (past the free
          trial). Pay these by hand each month. -->
+    <!-- BLACK FRIDAY (BFMAIL1, 25 Nov 2026): today's email to every speech
+         therapist on the list, by a press (the daily cron sends Thu-Sun). -->
+    <h2>Black Friday email</h2>
+    <p class="muted">Today's Black Friday email to every speech therapist on your list. Skips anyone who unsubscribed, already pays for Sona Pro, or got the sign-up email in the last 12 hours. Thursday to Sunday the emails go out by themselves at about 9 AM Mountain.</p>
+    <p><button id="bfCheck" type="button">Check who gets today's email</button> <button id="bfSend" type="button" hidden>Send it now</button></p>
+    <p class="muted" id="bfSay" role="status"></p>
+
     <h2>Referrals</h2>
     <p class="muted">Therapists whose link brought in another therapist. Pay $8 a month for each one who is paying (past the free trial). Paid by hand; anyone paid $600 or more in a year needs a 1099.</p>
     <div class="cards">
@@ -266,6 +273,39 @@
           $("err").textContent = "Network hiccup — try again.";
         });
     }
+    // BLACK FRIDAY (BFMAIL1): /api/founders/bf-send. Check first (GET, sends
+    // nothing), then Send (POST) only after a check named how many.
+    function bfKey() { return ($("key").value || "").trim(); }
+    function bfSay(t) { $("bfSay").textContent = t; }
+    $("bfCheck").onclick = function () {
+      $("bfSend").hidden = true; bfSay("Checking…");
+      fetch("/api/founders/bf-send", { headers: { "x-founder-key": bfKey() }, cache: "no-store" })
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          if (!j || !j.ok) { bfSay((j && j.error) || "Couldn't check."); return; }
+          if (j.stopped === "off") { bfSay("There's no Black Friday email to send today."); return; }
+          if (!j.left && !j.more) { bfSay("Nobody left to send today's email to (" + j.skipped + " skipped)."); return; }
+          // j.more: the count ran out of time, so more may be waiting than it says
+          bfSay(j.left ? "Today's email, \u201c" + (j.subject || "") + "\u201d, would go to " + j.left + (j.more ? "+" : "") + " therapists (" + j.skipped + " skipped)."
+            : "The list is long and the count ran out of time. Some therapists may still be waiting for today's email.");
+          $("bfSend").textContent = j.left ? "Send it now to " + j.left + (j.more ? "+" : "") : "Send to whoever is left";
+          $("bfSend").hidden = false;
+        })
+        .catch(function () { bfSay("Network hiccup. Try again."); });
+    };
+    $("bfSend").onclick = function () {
+      $("bfSend").hidden = true; bfSay("Sending… this can take a few minutes. Keep this page open.");
+      fetch("/api/founders/bf-send", { method: "POST", headers: { "x-founder-key": bfKey() }, cache: "no-store" })
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          if (!j || !j.ok) { bfSay((j && j.error) || "Couldn't send."); return; }
+          var t = "Sent " + j.sent + ".";
+          if (j.failed) t += " " + j.failed + " didn't go.";
+          if (j.left) t += " " + j.left + (j.more ? "+" : "") + " still to go: press Check, then Send again.";
+          bfSay(t);
+        })
+        .catch(function () { bfSay("The page lost touch while sending. Press Check to see how many are left."); });
+    };
     // REFERRALS (REFER1): /api/founders/referrals
     function loadReferrals(key) {
       fetch("/api/founders/referrals", { headers: { "x-founder-key": key }, cache: "no-store" })

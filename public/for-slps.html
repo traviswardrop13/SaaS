@@ -605,6 +605,12 @@
       var email = (($("fEmail").value) || "").trim();
       $("fErr").textContent = "";
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err("Enter a valid email."); $("fEmail").focus(); return; }
+      // SONA PRO GOES STRAIGHT TO STRIPE (BUYNOW1, Travis, 25 Nov 2026: "the
+      // button on the purchase page goes to a Stripe checkout. Not the SLP
+      // dashboard"). /api/slp/buy opens Stripe's page for this email; back
+      // from it, this page (?bought=) emails the sign-in link. Sona Clinic,
+      // when it is on sale, still goes by the sign-in email below.
+      if ((PICK || "pro") === "pro") { buyNow(email); return; }
       // THE FORM STARTS A TRIAL TOO (SLPSITE1, 18 Nov 2026): the dashboard
       // sends a LOCKED account from its email link to checkout only when a
       // plan is remembered, so once the link is sent the form remembers the
@@ -649,6 +655,60 @@
       });
     }
     $("signup").addEventListener("submit", function (e) { e.preventDefault(); go(); });
+
+    // BUYNOW1: the email is kept on Sona's list first (a checkout left
+    // half-way still hears about Sona Pro), then Stripe's page opens.
+    function buyNow(email) {
+      busy(true);
+      $("fGo").textContent = "Opening checkout…";
+      try {
+        fetch("/api/lead", {
+          method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true,
+          body: JSON.stringify({ email: email, role: "slp", source: "plans-checkout", utm_source: attrib.utm_source, utm_campaign: attrib.utm_campaign }),
+        }).catch(function () {});
+      } catch (e) {}
+      fetch("/api/slp/buy", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email, ref: ref || undefined }),
+      }).then(function (r) { return r.json(); }).then(function (j) {
+        if (!j || !j.ok || !j.url) {
+          busy(false);
+          err((j && j.error) || "Couldn't open checkout. Try again.");
+          return;
+        }
+        try { if (window.sonaTrack) { if (OPTED_IN) sonaTrack("InitiateCheckout"); else sonaTrack("Lead"); } } catch (e) {}
+        // a beat for the pixel's request to leave, as the opt-in does
+        setTimeout(function () { location.assign(j.url); }, 150);
+      }).catch(function () { busy(false); err("Network hiccup — try again."); });
+    }
+
+    // BACK FROM STRIPE (BUYNOW1): /plans?bought=cs_… asks the server, which
+    // reads the checkout from Stripe and emails the sign-in link once.
+    (function () {
+      var sid = "";
+      try { sid = String(new URLSearchParams(location.search).get("bought") || ""); } catch (e) {}
+      if (!/^cs_[A-Za-z0-9_]{10,240}$/.test(sid)) return;
+      try { history.replaceState(null, "", location.pathname + "#start"); } catch (e) {}
+      $("sentT").textContent = "You’re in!";
+      showDone("Checking your payment…");
+      fetch("/api/slp/buy?session=" + encodeURIComponent(sid), { cache: "no-store" })
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          if (j && j.ok && j.done) {
+            showDone(j.mailed
+              ? "Sona Pro is on. We emailed you a sign-in link" + (j.to ? " (" + j.to + ")" : "") + ". Open it to get to your dashboard."
+              : "Sona Pro is on. Sign in at app.speaksona.com/slp-login.html with the email you used at checkout.");
+            // a free trial is a StartTrial to Meta, a charge today a Purchase
+            try { if (window.sonaTrack) { if (j.trial) sonaTrack("StartTrial"); else sonaTrack("Purchase"); } } catch (e) {}
+          } else if (j && j.ok) {
+            $("sentT").textContent = "Almost there";
+            showDone("Your payment is still finishing. Sign in at app.speaksona.com/slp-login.html with the email you used.");
+          } else {
+            showDone("Sign in at app.speaksona.com/slp-login.html with the email you used at checkout.");
+          }
+        })
+        .catch(function () { showDone("Sign in at app.speaksona.com/slp-login.html with the email you used at checkout."); });
+    })();
 
     // /checkout (GHLEXIT1): the address GoHighLevel's lead form and its
     // emails sent people to. It is this page, opened at the plans.
