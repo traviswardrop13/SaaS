@@ -142,7 +142,7 @@ if (R) {
   const noLabel = R.normalizeInvite({ label: "   ", sounds: ["R"] });
   ok("an invite needs a label — it is all the pending list can show", !!noLabel.error, JSON.stringify(noLabel));
   ok("an invite has a LABEL and no name field at all — the family types the name when they join",
-    Object.keys(good).sort().join() === "age,label,note,pos,repsPerDay,sounds" && !("child" in good) && !("name" in good), Object.keys(good).join());
+    Object.keys(good).sort().join() === "age,games,label,note,pos,repsPerDay,sounds" && good.games === null && !("child" in good) && !("name" in good), Object.keys(good).join());
   ok("…and no diagnosis, goal-bank or clinical note", !/diagnos|goalBank|clinicalNote|icd/i.test(Object.keys(good).join()));
 
   // ── expiry is real: each invite is its own key with its own EX ──

@@ -966,6 +966,344 @@
           line: { big: "We play until it's time for supper. A gold star for the playground on our helper map!",
                   little: "We play until supper. A gold star for our helper map!" } }
       ]
+    },
+    // TALKMORE1, the other sounds (25 Nov 2026): one later story each for L, Z,
+    // F, K, G, SH, CH and TH, off until drawn and read, as the R and S ones.
+
+    // L: Lola the llama's lemons rolled away before her lemonade stand opens, so the child helps find them on the lawn, in a tree and under a sleepy lizard, and everyone shares lemonade.
+    lola: {
+      sound: "L",
+      wash: "#6e5a1c",
+      intro: [
+        { art: "s01", ages: "both", key: "lollipop",
+          line: "Pelly the pelican brought us a letter. Oops! That's a giant lollipop!" },
+        { art: "s02", ages: "both", key: "llama",
+          line: { big: "Here's the real letter. It's from Lola the llama. Her lemons rolled away before her lemonade stand opens!",
+                  little: "The real letter is from Lola the llama. Her lemons rolled away!" } },
+        { art: "s03", ages: "big", key: "lane",
+          line: "We hurry down the leafy lane to the little park at the top of the hill." },
+        { art: "s04", ages: "both", key: "lemons",
+          line: { big: "Here is Lola's lemonade stand, but her basket is empty. Where did all the lemons go?",
+                  little: "Lola's basket is empty. Where did the lemons go?" } },
+        { art: "s05", ages: "both", key: "lawn",
+          line: { big: "Look, yellow lemons on the lawn! They rolled all the way down the hill.",
+                  little: "Lemons on the lawn! This way!" } },
+        { art: "s06", ages: "big", key: "ladder",
+          line: "Some lemons bounced up into a tall tree. Up the ladder we go, one step at a time!" },
+        { art: "s07", ages: "both", key: "lizard",
+          line: { big: "The last lemons rolled into a hollow log. A little lizard is using one as a pillow!",
+                  little: "A little lizard is napping on a lemon!" } },
+        { art: "s08", ages: "both", key: "lemonade",
+          line: { big: "The lizard gives it back with a yawn. Squeeze and stir, and Lola makes her lemonade!",
+                  little: "Squeeze and stir. Lola makes lemonade!" } }
+      ],
+      ending: [
+        { art: "e01", ages: "both", key: "line",
+          line: { big: "The stand is open! Friends from all over the park wait in a long line.",
+                  little: "The stand is open! Friends wait in a line." } },
+        { art: "e02", ages: "big", key: "leaf",
+          line: "Lola puts a little green leaf on top of every cup. Even the lizard gets one!" },
+        { art: "e03", ages: "both", key: "laugh",
+          line: { big: "Lola takes a big sip and starts to laugh. Her lemonade tickles her nose!",
+                  little: "Lola sips and starts to laugh!" } },
+        { art: "e04", ages: "both", key: "lucky",
+          line: { big: "What a lucky day! A gold star for Lola's lemonade stand on our helper map!",
+                  little: "What a lucky day! A gold star for our helper map!" } }
+      ]
+    },
+
+    // Z: Zola the koala's little zeppelin went flat when its zipper popped open, and the child's words zip it shut, pump it full and fly it over the farm.
+    zola: {
+      sound: "Z",
+      wash: "#2f5585",
+      intro: [
+        { art: "s01", ages: "both", key: "zebra",
+          line: "Pelly the pelican brought us a letter. Oops! That's a little toy zebra!" },
+        { art: "s02", ages: "both", key: "zeppelin",
+          line: { big: "Here's the real letter. It's from Zola the koala. Her zeppelin went flat before the big ride!",
+                  little: "The real letter is from Zola the koala. Her zeppelin went flat!" } },
+        { art: "s03", ages: "big", key: "zucchini",
+          line: "We hurry along the farm path, past a garden of giant zucchini, to Zola's flower meadow." },
+        { art: "s04", ages: "both", key: "zipper",
+          line: { big: "Oh no! The zeppelin's big zipper popped open, and all its air puffed out. Let's close the zipper!",
+                  little: "Oh no! The zipper popped open. Let's close the zipper!" } },
+        { art: "s05", ages: "both", key: "zip",
+          line: { big: "Zip! We pull the zipper all the way shut. Now the zeppelin needs lots of air.",
+                  little: "Zip! The zipper is shut. Now it needs air." } },
+        { art: "s06", ages: "big", key: "zany",
+          line: "Here comes Zola's friend, a zany little goat. Boing! She hops on the pump, and puff, the zeppelin grows." },
+        { art: "s07", ages: "both", key: "zinnias",
+          line: { big: "Hooray! The zeppelin is big and round. It floats up over the zinnias, tugging at its ropes.",
+                  little: "Hooray! The zeppelin floats up over the zinnias!" } },
+        { art: "s08", ages: "both", key: "zoom",
+          line: { big: "We all climb into the basket. Zola turns the little wheel, the propeller spins, and up we zoom!",
+                  little: "We climb in the basket. Up we zoom!" } }
+      ],
+      ending: [
+        { art: "e01", ages: "both", key: "zigzag",
+          line: { big: "Whee! We zigzag around the fluffy white clouds, this way and that way.",
+                  little: "Whee! We zigzag around the clouds!" } },
+        { art: "e02", ages: "big", key: "zoo",
+          line: "Far below is a tiny zoo. The giraffes and elephants look up and wave hello!" },
+        { art: "e03", ages: "both", key: "zillion",
+          line: { big: "We float softly back down to the meadow. Zola gives us a zillion thank-you hugs!",
+                  little: "We float back down. Zola gives us a zillion hugs!" } },
+        { art: "e04", ages: "both", key: "zinnia",
+          line: { big: "Zola gives us a pink zinnia to take home. A gold star for Zola's meadow on our helper map!",
+                  little: "Zola gives us a pink zinnia. A gold star for our helper map!" } }
+      ]
+    },
+
+    // F: A long knitted scarf is tangled in the gears of Felix the ferret's Ferris wheel; the child's words follow it to a granny goat, untangle it and get the wheel turning.
+    felix: {
+      sound: "F",
+      wash: "#7a3b52",
+      intro: [
+        { art: "s01", ages: "both", key: "funnel",
+          line: "Pelly the pelican brought us a letter. Oops! That's a funnel! Is it a hat, Pelly?" },
+        { art: "s02", ages: "both", key: "ferret",
+          line: { big: "Here's the real letter. It's from Felix the ferret. The big wheel at his fair is stuck!",
+                  little: "The real letter is from Felix the ferret. His big wheel is stuck!" } },
+        { art: "s03", ages: "big", key: "farm",
+          line: "We hurry down the country lane, past the farm, to the fair on the grassy hill." },
+        { art: "s04", ages: "both", key: "fair",
+          line: { big: "The fair opens soon, but the Ferris wheel won't go round. Let's find out why!",
+                  little: "The fair opens soon, but the big wheel won't go!" } },
+        { art: "s05", ages: "both", key: "fuzzy",
+          line: { big: "Look! A long, fuzzy scarf is tangled all around the wheel's big wooden gears.",
+                  little: "A fuzzy scarf is stuck in the wheel!" } },
+        { art: "s06", ages: "big", key: "follow",
+          line: "The scarf goes on and on, down the hill. Let's follow it! At the end sits a granny goat, knitting away." },
+        { art: "s07", ages: "both", key: "fold",
+          line: { big: "The granny goat giggles. Her yarn rolled away! We help her fold the long scarf, nice and neat.",
+                  little: "We help the granny goat fold up the long scarf." } },
+        { art: "s08", ages: "both", key: "faster",
+          line: { big: "Now let's give the big wheel a push. One, two, three! It turns faster and faster!",
+                  little: "Push, one, two, three! Faster and faster!" } }
+      ],
+      ending: [
+        { art: "e01", ages: "both", key: "fine",
+          line: { big: "The Ferris wheel spins round and round, and its little lights twinkle on. What a fine sight!",
+                  little: "The big wheel spins round and round. What a fine sight!" } },
+        { art: "e02", ages: "big", key: "fudge",
+          line: "We ride all the way to the top and share sweet fudge with Felix and the granny goat." },
+        { art: "e03", ages: "both", key: "funny",
+          line: { big: "The granny goat knits us a funny little hat with a pom-pom. Thank you, friends!",
+                  little: "The goat knits us a funny little hat. Thank you, friends!" } },
+        { art: "e04", ages: "both", key: "fantastic",
+          line: { big: "What a fantastic fair! A gold star for Felix's fair on our helper map!",
+                  little: "What a fantastic day! A gold star for our helper map!" } }
+      ]
+    },
+
+    // K: Coco the kangaroo's carnival carousel won't turn because a silly cockatoo flew off with its brass key; the child's words find it and swap it back for a cupcake.
+    coco: {
+      sound: "K",
+      wash: "#6e3a63",
+      intro: [
+        { art: "s01", ages: "both", key: "cactus",
+          line: "Pelly the pelican brought us a letter. Oops! That's a tiny cactus in a pot!" },
+        { art: "s02", ages: "both", key: "kangaroo",
+          line: { big: "Here's the real letter. It's from Coco the kangaroo. Her carousel stopped, and its key is lost!",
+                  little: "The real letter is from Coco the kangaroo. Her key is lost!" } },
+        { art: "s03", ages: "big", key: "carnival",
+          line: "We hop up the hill path to the carnival, with its striped tents and a little Ferris wheel." },
+        { art: "s04", ages: "both", key: "carousel",
+          line: { big: "The carousel won't go round without its big brass key. Let's find the key for the carousel!",
+                  little: "The carousel won't go round! Let's find its key." } },
+        { art: "s05", ages: "both", key: "candy",
+          line: { big: "We peek behind the candy stand. Just pink cotton candy, no key!",
+                  little: "We peek by the candy stand. No key!" } },
+        { art: "s06", ages: "big", key: "cat",
+          line: "A curious cat on the popcorn cart waves his paw up at the sky. Thank you, cat!" },
+        { art: "s07", ages: "both", key: "cockatoo",
+          line: { big: "Up on the Ferris wheel sits a silly cockatoo, with the shiny key in her beak!",
+                  little: "A silly cockatoo has the key!" } },
+        { art: "s08", ages: "both", key: "cupcake",
+          line: { big: "We hold up a tasty cupcake. The cockatoo flutters down and swaps the key for the cupcake!",
+                  little: "We hold up a cupcake. The cockatoo swaps it for the key!" } }
+      ],
+      ending: [
+        { art: "e01", ages: "both", key: "key",
+          line: { big: "Coco turns the key, click, click! The carousel spins, and happy music plays.",
+                  little: "Coco turns the key. The carousel spins!" } },
+        { art: "e02", ages: "big", key: "camel",
+          line: "We all ride the carousel. Echo picks a camel with a bright blue saddle." },
+        { art: "e03", ages: "both", key: "coin",
+          line: { big: "Coco gives us a shiny copper coin to keep. Thank you, friends!",
+                  little: "Coco gives us a shiny coin. Thank you, friends!" } },
+        { art: "e04", ages: "both", key: "come",
+          line: { big: "Come back soon, Coco! A gold star for the carnival on our helper map!",
+                  little: "Come back soon! A gold star for our helper map!" } }
+      ]
+    },
+
+    // G: A gust of wind scatters Gabby the gorilla's golf balls across her mini golf course, and the child's words find all six so the golf game can begin.
+    gabby: {
+      sound: "G",
+      wash: "#3f6a34",
+      intro: [
+        { art: "s01", ages: "both", key: "goggles",
+          line: "Pelly the pelican brought us a letter. Oops! That's a pair of swim goggles!" },
+        { art: "s02", ages: "both", key: "gorilla",
+          line: { big: "Here's the real letter. It's from Gabby the gorilla. Her golf balls blew all over her golf course!",
+                  little: "The real letter is from Gabby the gorilla. Her golf balls blew away!" } },
+        { art: "s03", ages: "big", key: "gate",
+          line: "We hurry down the winding path and through the little white gate to the golf course." },
+        { art: "s04", ages: "both", key: "golf",
+          line: { big: "A gust of wind tipped over the bucket, and every golf ball is gone. Let's look!",
+                  little: "Every golf ball is gone! Let's look." } },
+        { art: "s05", ages: "both", key: "garden",
+          line: { big: "Look, three golf balls rolled into the garden, under the big pumpkin leaves!",
+                  little: "Three balls are in the garden!" } },
+        { art: "s06", ages: "big", key: "goldfish",
+          line: "Two more balls are floating in the pond. A friendly goldfish nudges them to the edge. Thank you!" },
+        { art: "s07", ages: "both", key: "gull",
+          line: { big: "One more ball! A cheeky gull is sitting on the windmill with the ball in its beak.",
+                  little: "A gull has the last ball!" } },
+        { art: "s08", ages: "both", key: "give",
+          line: { big: "Let's ask the gull nicely. Please give it back! Plop, the ball drops into Gabby's hands.",
+                  little: "Please give it back, gull! Plop!" } }
+      ],
+      ending: [
+        { art: "e01", ages: "both", key: "game",
+          line: { big: "All six balls are back in the bucket. Now the golf game can begin!",
+                  little: "Every ball is back! The golf game can begin!" } },
+        { art: "e02", ages: "big", key: "goofy",
+          line: "Echo taps his ball. It rolls right into the mouth of a goofy frog statue. Gulp!" },
+        { art: "e03", ages: "both", key: "goodies",
+          line: { big: "Gabby shares a basket of goodies with everyone, even the gull. Yum!",
+                  little: "Gabby shares her goodies. Yum!" } },
+        { art: "e04", ages: "both", key: "good",
+          line: { big: "What a good day! A gold star for Gabby's golf course on our helper map!",
+                  little: "What a good day! A gold star for our helper map!" } }
+      ]
+    },
+
+    // SH: Shona the sheep rolled in the mud before her farm party, and the child's words give her a bubbly shower so she is clean and fluffy in time to dance.
+    shona: {
+      sound: "SH",
+      wash: "#5a4a7a",
+      intro: [
+        { art: "s01", ages: "both", key: "shirt",
+          line: "Pelly the pelican brought us a letter. Oops! That's a little polka-dot shirt!" },
+        { art: "s02", ages: "both", key: "sheep",
+          line: { big: "Here's the real letter. It's from Shona the sheep. She rolled in the mud before her farm party!",
+                  little: "The real letter is from Shona the sheep. She's all muddy!" } },
+        { art: "s03", ages: "big", key: "shed",
+          line: "We hurry down the path to the farm, past the little old red shed." },
+        { art: "s04", ages: "both", key: "shower",
+          line: { big: "Shona has big mud spots all over her wool, and the party starts soon! Let's give her a shower.",
+                  little: "Shona is all muddy! Let's give her a shower." } },
+        { art: "s05", ages: "both", key: "shampoo",
+          line: { big: "We rub lots of pink shampoo into her wool. Look at all the bubbles!",
+                  little: "We rub in pink shampoo. Bubbles!" } },
+        { art: "s06", ages: "big", key: "shapes",
+          line: "The bubbles make funny shapes on her wool, a tall hat, a long beard and a big bow!" },
+        { art: "s07", ages: "both", key: "shake",
+          line: { big: "Now Shona gives a big wiggly shake. Splash! Water flies everywhere, and we get wet too!",
+                  little: "Shona gives a big shake. Splash!" } },
+        { art: "s08", ages: "both", key: "sheet",
+          line: { big: "We wrap her up in a big soft sheet to dry. She's warm and cozy.",
+                  little: "We wrap her in a soft sheet. Cozy!" } }
+      ],
+      ending: [
+        { art: "e01", ages: "both", key: "shiny",
+          line: { big: "Ta-da! Shona's wool is clean, fluffy and shiny, just like a soft white cloud!",
+                  little: "Shona is clean, fluffy and shiny!" } },
+        { art: "e02", ages: "big", key: "shuffle",
+          line: "At the farm party, we shuffle our feet and dance with all of Shona's farm friends." },
+        { art: "e03", ages: "both", key: "shares",
+          line: { big: "Shona shares a soft little ball of her clean wool with us. Thank you, friends!",
+                  little: "Shona shares a ball of wool with us. Thank you!" } },
+        { art: "e04", ages: "both", key: "shine",
+          line: { big: "See it shine? A gold star for Shona's farm on our helper map!",
+                  little: "See it shine? A gold star for our helper map!" } }
+      ]
+    },
+
+    // CH: Chico the chinchilla hid a treasure chest for a party and forgot where, so the child follows his chalk arrows and a chickadee's chirp to find it and share the picnic inside.
+    chico: {
+      sound: "CH",
+      wash: "#6d4b2e",
+      intro: [
+        { art: "s01", ages: "both", key: "chicken",
+          line: "Pelly the pelican brought us a letter. Oops! That's a rubber chicken!" },
+        { art: "s02", ages: "both", key: "chinchilla",
+          line: { big: "Here's the real letter. It's from Chico the chinchilla. He hid a treasure chest for a party and forgot where!",
+                  little: "The real letter is from Chico the chinchilla. He can't find his treasure!" } },
+        { art: "s03", ages: "big", key: "chilly",
+          line: "The wind is chilly on the hill, so we hurry up the winding path to Chico's little stone house." },
+        { art: "s04", ages: "both", key: "chest",
+          line: { big: "Chico hid a treasure chest for his friends to find, but now he can't find it. Let's find the chest!",
+                  little: "Chico can't find his treasure chest! Let's find the chest." } },
+        { art: "s05", ages: "both", key: "chalk",
+          line: { big: "Look, an arrow in chalk on a big rock. Chico drew chalk arrows to show the way!",
+                  little: "A chalk arrow! This way!" } },
+        { art: "s06", ages: "big", key: "chirp",
+          line: "The chalk arrows stop at the fence. Chirp, chirp! A little chickadee waves her wing at the old oak tree." },
+        { art: "s07", ages: "both", key: "chuckle",
+          line: { big: "At the oak tree, Chico starts to chuckle. Now he remembers! The chest is under the leaves.",
+                  little: "Chico starts to chuckle. It's under the leaves!" } },
+        { art: "s08", ages: "both", key: "chain",
+          line: { big: "We brush the leaves away, and there's the chest! Chico unhooks its little gold chain.",
+                  little: "There's the chest! Chico unhooks the chain." } }
+      ],
+      ending: [
+        { art: "e01", ages: "both", key: "cheese",
+          line: { big: "Chico lifts the lid. Inside is a treasure picnic, with cheese, crackers and berries for everyone!",
+                  little: "Inside is a picnic! Cheese for everyone!" } },
+        { art: "e02", ages: "big", key: "chomp",
+          line: "We sit on a picnic blanket with the chickadee and chomp, chomp, chomp on the yummy treats." },
+        { art: "e03", ages: "both", key: "cheek",
+          line: { big: "Chico gives us a big hug, cheek to cheek. Thank you, treasure hunters!",
+                  little: "A big hug, cheek to cheek. Thank you!" } },
+        { art: "e04", ages: "both", key: "cheerful",
+          line: { big: "What a cheerful day! A gold star for Chico's oak tree on our helper map!",
+                  little: "What a cheerful day! A gold star for our helper map!" } }
+      ]
+    },
+
+    // TH: The wind blew a hole in Thea the hedgehog's thatched roof, so the child helps her fetch straw from the farm field over the hill and patch it.
+    thea: {
+      sound: "TH",
+      wash: "#6b4a1c",
+      intro: [
+        { art: "s01", ages: "both", key: "thermos",
+          line: "Pelly the pelican brought us a letter. Oops! That's a big blue thermos!" },
+        { art: "s02", ages: "both", key: "thatch",
+          line: { big: "Here's the real letter. It's from Thea the hedgehog. The wind blew a hole in the thatch on her roof!",
+                  little: "The real letter is from Thea the hedgehog. Her roof thatch has a hole!" } },
+        { art: "s03", ages: "big", key: "thicket",
+          line: "We hurry down the lane and through a little thicket to Thea's cozy cottage." },
+        { art: "s04", ages: "both", key: "thimble",
+          line: { big: "Drip, drop! Last night's rain came through the hole, and Thea caught it in a thimble. Silly Thea!",
+                  little: "Drip, drop! Thea caught the rain in a thimble!" } },
+        { art: "s05", ages: "both", key: "thumb",
+          line: { big: "Thea holds up her thumb toward the hill. The field by the barn is full of golden straw!",
+                  little: "Thea's thumb shows the way. Golden straw, over there!" } },
+        { art: "s06", ages: "big", key: "thistle",
+          line: "A fuzzy purple thistle tickles Echo's wing as we pass. Hee hee!" },
+        { art: "s07", ages: "both", key: "thorn",
+          line: { big: "Look, a thorn on the bramble by the gate. We step around it and pick up big bundles of straw.",
+                  little: "Look, a thorn! We step around it." } },
+        { art: "s08", ages: "both", key: "thin",
+          line: { big: "We tie each bundle with a thin piece of string, and off we go, back to Thea's cottage.",
+                  little: "We tie the straw with thin string!" } }
+      ],
+      ending: [
+        { art: "e01", ages: "both", key: "thump",
+          line: { big: "Thump, thump! Up on the roof, Thea taps fresh straw into the hole, one bundle at a time.",
+                  little: "Thump, thump! Thea fixes the roof." } },
+        { art: "e02", ages: "big", key: "thud",
+          line: "Thud! The last bundle lands on the roof, and Thea pats it neatly into place. The hole is gone!" },
+        { art: "e03", ages: "both", key: "thanks",
+          line: { big: "Thea pours warm cocoa for everyone. Thanks for helping, friends!",
+                  little: "Thea pours us cocoa. Thanks, friends!" } },
+        { art: "e04", ages: "both", key: "thick",
+          line: { big: "Thea's roof is thick and cozy now. A gold star for Thea's cottage on our helper map!",
+                  little: "Her roof is thick and cozy! A gold star for our helper map!" } }
+      ]
     }
   };
 })(this);

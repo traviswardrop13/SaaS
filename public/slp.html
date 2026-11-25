@@ -351,6 +351,18 @@
     .sndpick button { border:1px solid var(--line-2); background:#fff; color:var(--ink); border-radius:7px; padding:6px 11px; font-size:14px; font-weight:500; cursor:pointer; min-height:34px; }
     .sndpick button:hover { background:var(--subtle); }
     .sndpick button.on { background:var(--accent); border-color:var(--accent); color:#fff; }
+    /* CHILDGAMES1: the games a therapist picks for one child */
+    .gp-mode { display:flex; gap:18px; flex-wrap:wrap; margin-top:4px; }
+    .gp-mode label { display:flex; gap:6px; align-items:center; font-size:14px; cursor:pointer; }
+    .gp-mode input[type=radio] { width:18px; height:18px; min-height:0; padding:0; margin:0; flex:none; border:0; box-shadow:none; accent-color:var(--accent); }
+    .gp-mode label { white-space:nowrap; min-height:34px; }
+    .gp { margin-top:8px; max-height:300px; overflow:auto; border:1px solid var(--line); border-radius:10px; padding:4px 8px 10px; }
+    .gp-age { font-size:12px; font-weight:600; color:var(--muted); margin:8px 2px 5px; }
+    .gp-row { display:grid; grid-template-columns:repeat(auto-fill, minmax(96px, 1fr)); gap:6px; }
+    .gp-game { border:1px solid var(--line-2); background:#fff; color:var(--ink); border-radius:9px; padding:4px; cursor:pointer; font-size:12px; line-height:1.25; display:flex; flex-direction:column; gap:4px; text-align:center; min-width:0; }
+    .gp-game img { display:block; width:100%; aspect-ratio:2/1; object-fit:cover; border-radius:6px; background:var(--subtle); }
+    .gp-game.on { border-color:var(--accent); box-shadow:0 0 0 2px var(--accent); }
+    .gp-game:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
     .sndpick button .norm { font-weight:400; font-size:11px; opacity:.7; margin-left:4px; }
     .hwgrid { display:grid; gap:16px; }
     @media (min-width:900px) { .hwgrid { grid-template-columns:minmax(0,1fr) 300px; align-items:start; } }
@@ -909,6 +921,16 @@
               <div class="cardtop"><h2>Homework</h2><div class="spacer"></div><span id="chHwPill"></span></div>
               <div id="chHw"></div>
             </div>
+            <div class="card noprint" id="chGamesCard" hidden>
+              <div class="cardtop"><h2>Games</h2><div class="spacer"></div><button class="btn ghost sm" id="chGamesEdit" type="button">Change</button></div>
+              <p class="sub" id="chGamesLine"></p>
+              <div id="chGamesEditor" hidden>
+                <div class="gp-mode" role="radiogroup" aria-label="Games"><label><input type="radio" name="chGamesMode" id="chGamesAll" value="all" /> All games</label><label><input type="radio" name="chGamesMode" id="chGamesPick" value="pick" /> Pick games</label></div>
+                <div class="gp" id="chGameGrid" hidden></div>
+                <div class="row" style="margin-top:10px;"><button class="btn sm" id="chGamesSave" type="button">Save</button><button class="btn ghost sm" id="chGamesCancel" type="button">Cancel</button></div>
+                <div class="err" id="chGamesErr" role="status"></div>
+              </div>
+            </div>
             <div class="card noprint" id="chLoginCard" hidden>
               <div class="cardtop"><h2>Sona login</h2></div>
               <p class="sub" id="chLoginLine"></p>
@@ -1287,6 +1309,11 @@
         </div>
         <label class="fl" id="famSoundsLabel">Target sound <span class="opt-note">(optional, up to 3)</span></label>
         <div class="sndpick" id="famSounds" role="group" aria-labelledby="famSoundsLabel"></div>
+        <label class="fl" for="famPos">Where in the word</label>
+        <select id="famPos"></select>
+        <span class="fl" id="famGamesLabel">Games</span>
+        <div class="gp-mode" role="radiogroup" aria-labelledby="famGamesLabel"><label><input type="radio" name="famGamesMode" id="famGamesAll" value="all" checked /> All games</label><label><input type="radio" name="famGamesMode" id="famGamesPick" value="pick" /> Pick games</label></div>
+        <div class="gp" id="famGameGrid" hidden></div>
         <button class="btn fam-go" id="famGo" type="button">Create login and email it</button>
         <div class="err" id="famErr" role="status"></div>
       </div>
@@ -1804,6 +1831,7 @@
       $("composer").style.display="none"; BULK=null;
       renderQuick(k);setChildView(CHILD_VIEW);
       paintChildLogin(k);
+      paintChildGames(k);
       var end=$("hwEndBtn"); if(end)end.onclick=function(){ end.disabled=true; postHw({childId:k.childId,action:"clear"},function(){loadAll(function(){renderChild(id);});}); };
       var again=$("hwAgainBtn"); if(again)again.onclick=function(){openComposer(false,k.hw&&k.hw.hw);};
     }
@@ -1817,6 +1845,39 @@
       $("chLoginNew").disabled=false; $("chLoginDel").disabled=false;
       $("chLoginNew").onclick=function(){ makeLogin({childId:k.childId},$("chLoginOut"),$("chLoginNew"),function(){ k.login={user:lg.user,own:false}; }); };
       $("chLoginDel").onclick=function(){ dropLogin({childId:k.childId},$("chLoginDel"),function(){ loadAll(function(){renderChild(k.childId);}); }); };
+    }
+    // CHILDGAMES1: the games this child sees on Home, and a way to change them
+    var CH_GAMES={};
+    function gamesLine(list){
+      if(!list)return "Every game. The child sees all the games their plan opens.";
+      return list.length+(list.length===1?" game: ":" games: ")+list.map(gameName).join(", ")+". Other games are hidden on the child's Home.";
+    }
+    function paintChildGames(k){
+      var card=$("chGamesCard"); card.hidden=true; $("chGamesEditor").hidden=true; $("chGamesErr").textContent=""; $("chGamesEdit").hidden=false;
+      if(!k)return;
+      fetch("/api/slp/childgames?childId="+encodeURIComponent(k.childId),{cache:"no-store"}).then(function(r){return r.json();}).then(function(j){
+        if(CURRENT!==k||!j||!j.ok)return;
+        k.games=j.games||null; card.hidden=false; $("chGamesLine").textContent=gamesLine(k.games);
+      }).catch(function(){});
+      $("chGamesEdit").onclick=function(){
+        CH_GAMES={}; (k.games||[]).forEach(function(g){CH_GAMES[g]=1;});
+        $("chGamesAll").checked=!k.games; $("chGamesPick").checked=!!k.games;
+        $("chGameGrid").hidden=!k.games; gamePicker($("chGameGrid"),CH_GAMES);
+        $("chGamesEditor").hidden=false; $("chGamesEdit").hidden=true; $("chGamesErr").textContent="";
+      };
+      $("chGamesAll").onchange=$("chGamesPick").onchange=function(){$("chGameGrid").hidden=!$("chGamesPick").checked;$("chGamesErr").textContent="";};
+      $("chGamesCancel").onclick=function(){$("chGamesEditor").hidden=true;$("chGamesEdit").hidden=false;$("chGamesErr").textContent="";};
+      $("chGamesSave").onclick=function(){
+        var pick=$("chGamesPick").checked, games=pick?Object.keys(CH_GAMES):null;
+        if(pick&&!games.length){$("chGamesErr").textContent="Pick at least one game, or choose All games.";return;}
+        $("chGamesSave").disabled=true;
+        fetch("/api/slp/childgames",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({childId:k.childId,games:games})}).then(answer).then(function(res){
+          $("chGamesSave").disabled=false; var j=res.j;
+          if(!j.ok){$("chGamesErr").textContent=j.error||"Couldn't save. Try again.";if(j.needPlan)loadPlan();return;}
+          k.games=j.games||null; $("chGamesLine").textContent=gamesLine(k.games);
+          $("chGamesEditor").hidden=true; $("chGamesEdit").hidden=false;
+        }).catch(function(){$("chGamesSave").disabled=false;$("chGamesErr").textContent="Network hiccup. Try again.";});
+      };
     }
     $("chAssignBtn").onclick=function(){openComposer(false);};
     $("chNoteBtn").onclick=function(){copy($("chNote").value,$("chNoteBtn"));};
@@ -2767,7 +2828,32 @@
        of (Travis's accepted trade-off; the family can change it in Sona's
        Settings). The parent's address is posted once
        and let go of. */
-    var FAM_SEL={}, FAM_BUSY=false, famReady=false, FAM_LAST=null;
+    /* CHILDGAMES1 (25 Nov 2026, Travis: "give full access or limited access
+       and customize it for each kid"): every game a child can open, by age
+       group, with its Home picture. A child given a list sees only those on
+       Home; the server checks every key (lib/childGames). */
+    function gameChoices(){
+      var A=(window.Sona&&Sona.GAME_ACTS)||{}, C=(window.Sona&&Sona.CRAFTED_CARDS)||{};
+      return Object.keys(A).filter(function(k){var a=A[k];return a&&!a.comingSoon&&a.available!==false&&C[k];})
+        .map(function(k){return {key:k,name:A[k].name,group:A[k].group,pic:"/assets/crafted/home-"+C[k]+".webp"};});
+    }
+    function gameName(k){var A=(window.Sona&&Sona.GAME_ACTS)||{};return A[k]?A[k].name:k;}
+    function gamePicker(box,sel){
+      box.innerHTML="";
+      [["simple","Ages 3–4"],["arcade","Ages 5–8"]].forEach(function(g){
+        var list=gameChoices().filter(function(x){return x.group===g[0];}); if(!list.length)return;
+        var h=document.createElement("p");h.className="gp-age";h.textContent=g[1];box.appendChild(h);
+        var row=document.createElement("div");row.className="gp-row";row.setAttribute("role","group");row.setAttribute("aria-label",g[1]);
+        list.forEach(function(x){
+          var b=document.createElement("button");b.type="button";b.className="gp-game"+(sel[x.key]?" on":"");b.setAttribute("aria-pressed",sel[x.key]?"true":"false");b.dataset.game=x.key;
+          b.innerHTML='<img src="'+esc(x.pic)+'" alt="" loading="lazy" /><span>'+esc(x.name)+'</span>';
+          b.onclick=function(){if(sel[x.key])delete sel[x.key];else sel[x.key]=1;b.classList.toggle("on",!!sel[x.key]);b.setAttribute("aria-pressed",sel[x.key]?"true":"false");};
+          row.appendChild(b);
+        });
+        box.appendChild(row);
+      });
+    }
+    var FAM_SEL={}, FAM_BUSY=false, famReady=false, FAM_LAST=null, FAM_GAMES={};
     function famInit(){
       if(famReady)return;famReady=true;
       $("famAge").innerHTML='<option value="">—</option>'+[3,4,5,6,7,8,9,10,11,12].map(function(a){return '<option value="'+a+'">'+a+'</option>';}).join("");
@@ -2778,10 +2864,13 @@
         else{FAM_SEL[x]=1;b.classList.add("on");b.setAttribute("aria-pressed","true");}
         $("famErr").textContent="";
       };wrap.appendChild(b);});
+      $("famPos").innerHTML=POSLIST.map(function(p){return'<option value="'+p.id+'"'+(p.id==="mix"?" selected":"")+'>'+esc(p.name)+'</option>';}).join("");
+      $("famGamesAll").onchange=$("famGamesPick").onchange=function(){var pick=$("famGamesPick").checked;$("famGameGrid").hidden=!pick;if(pick&&!$("famGameGrid").firstChild)gamePicker($("famGameGrid"),FAM_GAMES);$("famErr").textContent="";};
     }
     function famForm(){
       $("famForm").hidden=false;$("famDone").hidden=true;$("famErr").textContent="";
       $("famEmail").value="";$("famLabel").value="";$("famAge").value="";FAM_SEL={};
+      $("famPos").value="mix";$("famGamesAll").checked=true;FAM_GAMES={};$("famGameGrid").hidden=true;$("famGameGrid").innerHTML="";
       document.querySelectorAll("#famSounds button").forEach(function(b){b.classList.remove("on");b.setAttribute("aria-pressed","false");});
     }
     function openFamily(){
@@ -2814,6 +2903,13 @@
       if(label)body.label=label.slice(0,40);
       if(age)body.age=age;
       if(sounds.length)body.sounds=sounds;
+      // where in the word, and the games (CHILDGAMES1): no list is every game
+      var pos=$("famPos").value; if(pos&&pos!=="mix")body.pos=pos;
+      if($("famGamesPick").checked){
+        var games=Object.keys(FAM_GAMES);
+        if(!games.length){err.textContent="Pick at least one game, or choose All games.";return;}
+        body.games=games;
+      }
       FAM_BUSY=true;err.textContent="";$("famGo").disabled=true;$("famGo").textContent="Creating the login…";
       fetch("/api/slp/family",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}).then(answer).then(function(res){
         FAM_BUSY=false;$("famGo").disabled=false;$("famGo").textContent="Create login and email it";

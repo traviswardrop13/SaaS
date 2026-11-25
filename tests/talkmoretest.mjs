@@ -154,7 +154,7 @@ sec("4 as before", () => {
   const before = boot({ quest: { f: [0, 1, 2], s: 3, ls: 2, lk: "story", done: ymd(START - DAY), fd: ymd(START - DAY), a: ymd(START - 5 * DAY), sv: ymd(START - 5 * DAY), t1: "robo" } });
   const q = before.S.questToday();
   ok("a child before Day 14 still meets the next of the 14", q.kind === "story" && q.day === 4 && !q.story.more, q);
-  const p = boot({ quest: ALL14({ t1: "theo" }), profile: { focusSounds: ["TH"] } });
+  const p = boot({ quest: ALL14({}), profile: { focusSounds: ["P"] } });   // P: no talking story at all (TH has a later one since 25 Nov 2026)
   ok("a sound with no later stories: after Day 14 the game of the day, as before", p.S.questToday().kind === "game", p.S.questToday());
   const off = boot({ quest: ALL14(), session: { "sona.talkoff": "1" } });
   ok("the talking stories switched off: no later story either", off.S.questToday().kind === "game", off.S.questToday());

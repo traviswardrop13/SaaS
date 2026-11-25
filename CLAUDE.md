@@ -2336,8 +2336,9 @@ account takes `PRO_TERMS` and its dashboard opens on the plan page's
 14-day trial (card up front, Stripe). A returning account is only signed
 in, with the plain email. The clinicians' iPhone app keeps the
 free-dashboard door (it sells nothing). **Rachel's to review:** the new
-headline and lede. **Not built yet:** real SLP quotes (Travis sends them),
-the share picture (`tools/og/og-slp.html`) still says free dashboard.
+headline and lede. **Not built yet:** real SLP quotes (Travis sends them).
+(The share picture says "Start your free trial" since 17 Nov 2026,
+`og-slp.png?v=4`.)
 `landingtest`, `shiptest`, `caseloadtest`, `slpapi`.
 
 **The clinician page is the homepage**, updated to offer a free dashboard
@@ -2424,9 +2425,15 @@ store that does not answer signs nobody out. A family's enrolment ticket is
 never a session. The email greets an account by its own name, never one
 the caller sent; one IP may ask for 20 links an hour (`slpauth`, besides 5
 an email); and a `role: "slp"` lead is never put in the parents' welcome
-series. Still open, Travis's: repeat Pro trials with a new address (B13),
-and a button page so a school's link scanner cannot use the link up (the
-Clinic invite has one since 18 Nov 2026).
+series. Still open, Travis's: repeat Pro trials with a new address (B13).
+**The sign-in link has a button page (SCANSAFE1, 25 Nov 2026)**: a
+school's link scanner (Safe Links, Mimecast) opens every link in an email,
+and when GET signed in it spent the one-use link before the clinician
+tapped it ("That link expired"). Now `/api/slp/auth/verify` GET shows "Sign
+in to Sona" with one Sign in button that POSTs back (same-origin only), as
+the Clinic invite does; only the POST spends the link and signs in. A link
+already spent or expired goes straight to the sign-in page saying so. The
+six-digit code in the same email is unchanged.
 `caseloadtest`, `slpapi`, `slpcode` and `nurturetest` play it.
 
 **Gone since 17 Nov 2026, replaced by Session games (SLPPRO1, below):**
@@ -2950,6 +2957,42 @@ login is typed INTO the app. `lib/familyLogin.ts` holds the rules;
   question (onboardingtest). **Never in the footer:** the footer's button
   stays in the same place on every screen, so a double tap on it moves one
   screen. `familylogintest` pins it at 320, 375, 390 and an iPad.
+
+### Set up the child before the login (CHILDGAMES1, 25 Nov 2026)
+Travis: when a therapist sends a parent a login, "be able to customize the
+app for them before hand so like being able to choose the sound and word
+position even the games for them to play. so they can give full access or
+limited access and customize it for each kid."
+- **Add a family** now also asks **Where in the word** (the homework
+  composer's list; sent only when not Mixed) and **Games**: "All games" (the
+  default, as before) or "Pick games", the playable catalog's Home pictures
+  by age group, any number. The sound and position ride the invite into the
+  child's first homework (the claim's existing rule, 14 days), so Settings
+  shows them locked as homework always has.
+- **The games are their own record** (`lib/childGames.ts`, hash
+  `hwgames:<code>`, field childId, ~5 months), never inside homework: every
+  homework write replaces that record whole, and a new assignment must not
+  give a child every game back. The claim writes it; `/api/homework` answers
+  `games` beside `hw` (null: every game); `/api/slp/childgames` (GET, POST:
+  session, same origin, the child on that clinician's roster, Sona Pro to
+  set a list, never to go back to every game) is the child page's **Games**
+  card with Change. Removing the child and Delete my account delete it.
+- **On the phone** (`Sona.slpGames()`, block CHILDGAMES1 in sona.js, cached
+  in `sona.homework.v1` as `games`): a game off the list is not on Home, in
+  the Arcade's shelves or Today's picks, never the game of the day, and its
+  address goes Home (`gameAccess` reason "therapist"): never a grey card and
+  never the price. **A list is never access**: a listed Premium game on the
+  free version stays locked. Stories and books are never limited. The first
+  game after setup is Fruit Slice, or the list's first game when Fruit Slice
+  is not on it. A grown-up's "No thanks" or Stop sharing ends it with the
+  homework. Settings carries one read-only line ("<Name>'s speech therapist
+  picked N games to show on Home.").
+- **For Travis:** every word; that a game of the day with none of its age
+  group's games listed plays the list's first game, with the line "Play
+  <Game> with Echo!" when Sona has no line for it. **For Rachel:** nothing
+  new is asked of a child; the therapist picks the sound and the position,
+  as homework already lets them.
+`familylogintest` (the server) and `childgamestest` (the phone) play it.
 
 ### Sona for SLPs: the clinicians' own iPhone app (SLPAPP1, 16 Nov 2026)
 Travis: "start building the SLP dashboard mobile app"; asked, he chose **its
@@ -4220,8 +4263,14 @@ their sound on every page, three sayings).
   Raft", "Ruby's Nest", "Rex's Radio Show", "Remi's Red Sleigh", "Rina's
   Rainbow Reef", "Ravi's Rain Cloud"; S "Sami's Soccer Game", "Cecil's
   Circus Socks", "Suki's Super Soup", "Sadie's Sailboat", "Sasha's
-  Sunflowers", "Simon's Seesaw". Every key keeps TALK1's rule (the sound
-  before a vowel, by `booklex.json`; for R no second R).
+  Sunflowers", "Simon's Seesaw". **And one each for the other eight Day 1
+  sounds (25 Nov 2026, the same night)**: L "Lola's Lemonade Stand", Z
+  "Zola's Zeppelin", F "Felix's Fun Fair", K "Coco's Carousel", G "Gabby's
+  Golf Game", SH "Shona's Shower Day", CH "Chico's Treasure Chest", TH
+  "Thea's Thatched Roof". So every sound with a Day 1 story now has at least
+  one after Day 14 (P, B, M, N, T, D, V, J and the voiced TH still have none).
+  Every key keeps TALK1's rule (the sound before a vowel, by `booklex.json`;
+  for R no second R).
 - **Each is off until `ready: true`**: its pictures drawn and checked
   (`gen-adventure.mjs --only <id>`, `cut-adventure.py <id>`, prompts in
   `adventure-prompts.json`) AND Rachel has read its words. Not ready: never
@@ -4229,7 +4278,7 @@ their sound on every page, three sayings).
   `false`.
 - **Whose:** the sound Day 1's slot reads (`_talkFor(rotSounds())`,
   homework first), so `TALK_ON` and `sona.talkoff` turn these off too; a
-  sound with none (L, Z, F, K... today) keeps the game of the day.
+  sound with none (P, B, M... today) keeps the game of the day.
 - **The calendar is CAL1's:** one a calendar day, the next one not finished
   after the last one finished, a skipped one comes back after the others;
   when every one is finished, the game of the day again. Finished ones are

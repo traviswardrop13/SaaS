@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import { kvCmd, rosterKey } from "@/lib/slpAuth";
 import { hwKey, SOUND_NORM, POSITIONS, HW_MAX_SOUNDS, NOTE_MAX } from "@/lib/homework";
+import { cleanGames, gamesKey } from "@/lib/childGames";
 
 /**
  * The clinician's side of the roster: what an SLP knows about a child that the
@@ -173,6 +174,7 @@ export type InviteFields = {
   pos: string;
   repsPerDay: number;
   note: string;         // to the parent, capped like homework's note
+  games: string[] | null; // the games the therapist picked; null = every game (CHILDGAMES1)
 };
 /** The data key: what the clinician typed, plus when it was made and when it dies. */
 export type Invite = InviteFields & { token: string; createdAt: string; expiresAt: string };
@@ -213,6 +215,7 @@ export function normalizeInvite(input: unknown): InviteFields | { error: string 
     pos: POSITIONS.indexOf(String(b.pos || "")) >= 0 ? String(b.pos) : "mix",
     repsPerDay: clampInt(b.repsPerDay, 5, 200, 20),
     note: String(b.note || "").replace(/[\u0000-\u001f]/g, " ").slice(0, NOTE_MAX).trim(),
+    games: cleanGames(b.games),
   };
 }
 
@@ -395,6 +398,7 @@ export async function removeChild(code: string, childId: string, kv: Kv = kvCmd)
   await touch(rosterKey(code), kv);
   await kv(["HDEL", hwKey(code), childId]);
   await touch(hwKey(code), kv);
+  await kv(["HDEL", gamesKey(code), childId]);
   await kv(["HDEL", metaKey(code), childId]);
   await touch(metaKey(code), kv);
   const index = await readInviteIndex(code, kv);

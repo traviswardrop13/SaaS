@@ -33,7 +33,7 @@ the word bank. **E** — what NOT to record: parked, unlinked and dead lines.
   line (−20 dB RMS / −3 dB peak, with `/api/tts`'s own levelling), because a file
   plays as-is, and an unlevelled one is the one sound that can still jump.
 
-Switch state right now: `HUMAN_CLIPS = true` (public/sona.js:8946) — Rachel's recorded sounds (Part A) are ON: one take of the sound plays in the letter's place in the practice prompt (C1, C2, the turtle, B3) and after the games' "…say" lines (B5); every word below is spoken through TTS.
+Switch state right now: `HUMAN_CLIPS = true` (public/sona.js:8994) — Rachel's recorded sounds (Part A) are ON: one take of the sound plays in the letter's place in the practice prompt (C1, C2, the turtle, B3) and after the games' "…say" lines (B5); every word below is spoken through TTS.
 
 ---
 
@@ -78,7 +78,7 @@ burst, never held — a held /p/ teaches a schwa the child then has to unlearn).
 | A18 | TH (as in 'thumb') | **thhh** | STRETCH ~1.5 s | `TH.mp3`, `TH-demo.mp3` | Peek your tongue between your teeth and blow soft — th. |
 | A19 | TH (voiced, as in 'the') | **thuh** | STRETCH ~1.5 s | `THV.mp3`, `THV-demo.mp3` | Tongue between your teeth and buzz — th, like in 'the'. |
 
-Sources: models public/sona.js:4706 (`SOUND_SAY`, shown on the practice card and the games' keep-playing card, never sent to TTS); cues public/sona.js:4617 (`CUES`).
+Sources: models public/sona.js:4732 (`SOUND_SAY`, shown on the practice card and the games' keep-playing card, never sent to TTS); cues public/sona.js:4643 (`CUES`).
 
 ---
 
@@ -96,11 +96,11 @@ Pinned as exactly this list with no "!" (`tests/voicetest3.mjs`).
 
 | # | File | Say this | When Echo says it | Delivery | Source |
 |---|---|---|---|---|---|
-| B1 | praise-1.mp3 | Nice one. | After the easier target (the "I have an idea" line, B3/C5) passes — one of the five, picked at random. The only spoken praise in the live app, and the win line (B45) follows it; a normal pass gets only the win line. | Soft and pleased, a small smile in it. Not a cheer. | public/sona.js:4867; spoken at public/charge.html:2429 |
-| B2 | praise-2.mp3 | Good job. | Same moment, random pick of five. | Soft and pleased, a small smile in it. Not a cheer. | public/sona.js:4867; spoken at public/charge.html:2429 |
-| B3 | praise-3.mp3 | I heard that. | Same moment, random pick of five. | Soft and pleased, a small smile in it. Not a cheer. | public/sona.js:4867; spoken at public/charge.html:2429 |
-| B4 | praise-4.mp3 | That was lovely. | Same moment, random pick of five. | Soft and pleased, a small smile in it. Not a cheer. | public/sona.js:4867; spoken at public/charge.html:2429 |
-| B5 | praise-5.mp3 | Well done. | Same moment, random pick of five. | Soft and pleased, a small smile in it. Not a cheer. | public/sona.js:4867; spoken at public/charge.html:2429 |
+| B1 | praise-1.mp3 | Nice one. | After the easier target (the "I have an idea" line, B3/C5) passes — one of the five, picked at random. The only spoken praise in the live app, and the win line (B45) follows it; a normal pass gets only the win line. | Soft and pleased, a small smile in it. Not a cheer. | public/sona.js:4893; spoken at public/charge.html:2429 |
+| B2 | praise-2.mp3 | Good job. | Same moment, random pick of five. | Soft and pleased, a small smile in it. Not a cheer. | public/sona.js:4893; spoken at public/charge.html:2429 |
+| B3 | praise-3.mp3 | I heard that. | Same moment, random pick of five. | Soft and pleased, a small smile in it. Not a cheer. | public/sona.js:4893; spoken at public/charge.html:2429 |
+| B4 | praise-4.mp3 | That was lovely. | Same moment, random pick of five. | Soft and pleased, a small smile in it. Not a cheer. | public/sona.js:4893; spoken at public/charge.html:2429 |
+| B5 | praise-5.mp3 | Well done. | Same moment, random pick of five. | Soft and pleased, a small smile in it. Not a cheer. | public/sona.js:4893; spoken at public/charge.html:2429 |
 
 ### B2 — Coaching after a miss (19)
 
@@ -489,7 +489,7 @@ Every line each picture game's play script can hand to `api.instruct()` (for Day
 | B344 | picture-observatory-help-5.mp3 | Hold the round arrow. Watch which gears and sky pictures move. | The Moving-Star Observatory (Day 14 of the daily story): a direction said during play (the next move, a nudge, or help after a miss: see where it is said). Through Say & Play's instruction owner: never into an open microphone; help, a pause and finishing the move cancel it. | Short, playful and clear. This describes the finger action, not a speech target. | said at public/daily-adventures/observatory.js:55; owned at public/sayplay.js:844 |
 
 
-### B9 — The daily story (700)
+### B9 — The daily story (860)
 
 Echo reads every scene of the day's story (`adventure.html`; the scenes are `adventures.js` plus TALK1's `talk-stories.js`; the fourteen calendar stories and five sound-specific Day1 variants are listed in sona.js): Pelly's letter and the problem before the game, the happy ending after it. Ages 3-4 skip the scenes marked ages 5-8 and hear the short lines (public/adventure.html:174, public/adventure.html:175). The original stories lead to the game's word turn (C8); TALK1 asks each page's key through the shared word moment (C11). Unlike B1-B8 these already have a player: a line plays from `public/assets/adventure/voice/<file>` when `/assets/adventure/voice/manifest.js` lists exactly those words (the file is named by the voice version and the words, public/adventure.html:255, so a re-worded line has no file and plays in the live voice: public/adventure.html:262); there is no manifest yet, so every line plays in the live voice (public/adventure.html:280), the browser's own voice the last resort (public/adventure.html:434). Nothing is said while Sona's sound is off (public/adventure.html:478). Read at public/adventure.html:482; the lines ahead are fetched two at a time (public/adventure.html:299).
 
@@ -1195,6 +1195,166 @@ Echo reads every scene of the day's story (`adventure.html`; the scenes are `adv
 | B1042 | adventure/voice/81c7f578.mp3 | Everyone giggles. How silly! Wheee! | Day 20, S, not on yet ("Simon's Seesaw"), the ending, e03, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:962 |
 | B1043 | adventure/voice/7dce206e.mp3 | We play until it's time for supper. A gold star for the playground on our helper map! | Day 20, S, not on yet ("Simon's Seesaw"), the ending, e04, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:965 |
 | B1044 | adventure/voice/84950264.mp3 | We play until supper. A gold star for our helper map! | Day 20, S, not on yet ("Simon's Seesaw"), the ending, e04, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:965 |
+| B1045 | adventure/voice/72f014c4.mp3 | Pelly the pelican brought us a letter. Oops! That's a giant lollipop! | Day 15, L, not on yet ("Lola's Lemonade Stand"), the story, s01, both ages. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:978 |
+| B1046 | adventure/voice/f56e8ca4.mp3 | Here's the real letter. It's from Lola the llama. Her lemons rolled away before her lemonade stand opens! | Day 15, L, not on yet ("Lola's Lemonade Stand"), the story, s02, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:980 |
+| B1047 | adventure/voice/debe64cd.mp3 | The real letter is from Lola the llama. Her lemons rolled away! | Day 15, L, not on yet ("Lola's Lemonade Stand"), the story, s02, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:980 |
+| B1048 | adventure/voice/2895719c.mp3 | We hurry down the leafy lane to the little park at the top of the hill. | Day 15, L, not on yet ("Lola's Lemonade Stand"), the story, s03, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. | public/talk-stories.js:983 |
+| B1049 | adventure/voice/fd9675f1.mp3 | Here is Lola's lemonade stand, but her basket is empty. Where did all the lemons go? | Day 15, L, not on yet ("Lola's Lemonade Stand"), the story, s04, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. | public/talk-stories.js:985 |
+| B1050 | adventure/voice/e9a5aead.mp3 | Lola's basket is empty. Where did the lemons go? | Day 15, L, not on yet ("Lola's Lemonade Stand"), the story, s04, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. | public/talk-stories.js:985 |
+| B1051 | adventure/voice/cd0d5d3d.mp3 | Look, yellow lemons on the lawn! They rolled all the way down the hill. | Day 15, L, not on yet ("Lola's Lemonade Stand"), the story, s05, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:988 |
+| B1052 | adventure/voice/df13802d.mp3 | Lemons on the lawn! This way! | Day 15, L, not on yet ("Lola's Lemonade Stand"), the story, s05, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:988 |
+| B1053 | adventure/voice/ca7518cd.mp3 | Some lemons bounced up into a tall tree. Up the ladder we go, one step at a time! | Day 15, L, not on yet ("Lola's Lemonade Stand"), the story, s06, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:991 |
+| B1054 | adventure/voice/866ff6bd.mp3 | The last lemons rolled into a hollow log. A little lizard is using one as a pillow! | Day 15, L, not on yet ("Lola's Lemonade Stand"), the story, s07, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:993 |
+| B1055 | adventure/voice/cffd7ad2.mp3 | A little lizard is napping on a lemon! | Day 15, L, not on yet ("Lola's Lemonade Stand"), the story, s07, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:993 |
+| B1056 | adventure/voice/055c2125.mp3 | The lizard gives it back with a yawn. Squeeze and stir, and Lola makes her lemonade! | Day 15, L, not on yet ("Lola's Lemonade Stand"), the story, s08, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:996 |
+| B1057 | adventure/voice/d967432c.mp3 | Squeeze and stir. Lola makes lemonade! | Day 15, L, not on yet ("Lola's Lemonade Stand"), the story, s08, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:996 |
+| B1058 | adventure/voice/74180a2c.mp3 | The stand is open! Friends from all over the park wait in a long line. | Day 15, L, not on yet ("Lola's Lemonade Stand"), the ending, e01, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1001 |
+| B1059 | adventure/voice/9f219ba4.mp3 | The stand is open! Friends wait in a line. | Day 15, L, not on yet ("Lola's Lemonade Stand"), the ending, e01, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1001 |
+| B1060 | adventure/voice/36dc5d01.mp3 | Lola puts a little green leaf on top of every cup. Even the lizard gets one! | Day 15, L, not on yet ("Lola's Lemonade Stand"), the ending, e02, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1004 |
+| B1061 | adventure/voice/bf388ba1.mp3 | Lola takes a big sip and starts to laugh. Her lemonade tickles her nose! | Day 15, L, not on yet ("Lola's Lemonade Stand"), the ending, e03, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1006 |
+| B1062 | adventure/voice/263df034.mp3 | Lola sips and starts to laugh! | Day 15, L, not on yet ("Lola's Lemonade Stand"), the ending, e03, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1006 |
+| B1063 | adventure/voice/61236699.mp3 | What a lucky day! A gold star for Lola's lemonade stand on our helper map! | Day 15, L, not on yet ("Lola's Lemonade Stand"), the ending, e04, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1009 |
+| B1064 | adventure/voice/90a03abf.mp3 | What a lucky day! A gold star for our helper map! | Day 15, L, not on yet ("Lola's Lemonade Stand"), the ending, e04, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1009 |
+| B1065 | adventure/voice/96425e34.mp3 | Pelly the pelican brought us a letter. Oops! That's a little toy zebra! | Day 15, Z, not on yet ("Zola's Zeppelin"), the story, s01, both ages. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1020 |
+| B1066 | adventure/voice/99c0abc1.mp3 | Here's the real letter. It's from Zola the koala. Her zeppelin went flat before the big ride! | Day 15, Z, not on yet ("Zola's Zeppelin"), the story, s02, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1022 |
+| B1067 | adventure/voice/51d7b060.mp3 | The real letter is from Zola the koala. Her zeppelin went flat! | Day 15, Z, not on yet ("Zola's Zeppelin"), the story, s02, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1022 |
+| B1068 | adventure/voice/fec15c1d.mp3 | We hurry along the farm path, past a garden of giant zucchini, to Zola's flower meadow. | Day 15, Z, not on yet ("Zola's Zeppelin"), the story, s03, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. | public/talk-stories.js:1025 |
+| B1069 | adventure/voice/870cb2d6.mp3 | Oh no! The zeppelin's big zipper popped open, and all its air puffed out. Let's close the zipper! | Day 15, Z, not on yet ("Zola's Zeppelin"), the story, s04, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1027 |
+| B1070 | adventure/voice/7c0405fb.mp3 | Oh no! The zipper popped open. Let's close the zipper! | Day 15, Z, not on yet ("Zola's Zeppelin"), the story, s04, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1027 |
+| B1071 | adventure/voice/b6d953f3.mp3 | Zip! We pull the zipper all the way shut. Now the zeppelin needs lots of air. | Day 15, Z, not on yet ("Zola's Zeppelin"), the story, s05, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1030 |
+| B1072 | adventure/voice/f8173f99.mp3 | Zip! The zipper is shut. Now it needs air. | Day 15, Z, not on yet ("Zola's Zeppelin"), the story, s05, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1030 |
+| B1073 | adventure/voice/7ca3d917.mp3 | Here comes Zola's friend, a zany little goat. Boing! She hops on the pump, and puff, the zeppelin grows. | Day 15, Z, not on yet ("Zola's Zeppelin"), the story, s06, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1033 |
+| B1074 | adventure/voice/09f894eb.mp3 | Hooray! The zeppelin is big and round. It floats up over the zinnias, tugging at its ropes. | Day 15, Z, not on yet ("Zola's Zeppelin"), the story, s07, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1035 |
+| B1075 | adventure/voice/4a7744d5.mp3 | Hooray! The zeppelin floats up over the zinnias! | Day 15, Z, not on yet ("Zola's Zeppelin"), the story, s07, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1035 |
+| B1076 | adventure/voice/b000944a.mp3 | We all climb into the basket. Zola turns the little wheel, the propeller spins, and up we zoom! | Day 15, Z, not on yet ("Zola's Zeppelin"), the story, s08, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1038 |
+| B1077 | adventure/voice/74dc784a.mp3 | We climb in the basket. Up we zoom! | Day 15, Z, not on yet ("Zola's Zeppelin"), the story, s08, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1038 |
+| B1078 | adventure/voice/8fde0371.mp3 | Whee! We zigzag around the fluffy white clouds, this way and that way. | Day 15, Z, not on yet ("Zola's Zeppelin"), the ending, e01, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1043 |
+| B1079 | adventure/voice/d4b2b34b.mp3 | Whee! We zigzag around the clouds! | Day 15, Z, not on yet ("Zola's Zeppelin"), the ending, e01, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1043 |
+| B1080 | adventure/voice/70a3b737.mp3 | Far below is a tiny zoo. The giraffes and elephants look up and wave hello! | Day 15, Z, not on yet ("Zola's Zeppelin"), the ending, e02, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1046 |
+| B1081 | adventure/voice/947f9d1d.mp3 | We float softly back down to the meadow. Zola gives us a zillion thank-you hugs! | Day 15, Z, not on yet ("Zola's Zeppelin"), the ending, e03, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1048 |
+| B1082 | adventure/voice/763366a7.mp3 | We float back down. Zola gives us a zillion hugs! | Day 15, Z, not on yet ("Zola's Zeppelin"), the ending, e03, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1048 |
+| B1083 | adventure/voice/2946c126.mp3 | Zola gives us a pink zinnia to take home. A gold star for Zola's meadow on our helper map! | Day 15, Z, not on yet ("Zola's Zeppelin"), the ending, e04, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1051 |
+| B1084 | adventure/voice/daae4c99.mp3 | Zola gives us a pink zinnia. A gold star for our helper map! | Day 15, Z, not on yet ("Zola's Zeppelin"), the ending, e04, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1051 |
+| B1085 | adventure/voice/fd64886c.mp3 | Pelly the pelican brought us a letter. Oops! That's a funnel! Is it a hat, Pelly? | Day 15, F, not on yet ("Felix's Fun Fair"), the story, s01, both ages. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1062 |
+| B1086 | adventure/voice/17d75111.mp3 | Here's the real letter. It's from Felix the ferret. The big wheel at his fair is stuck! | Day 15, F, not on yet ("Felix's Fun Fair"), the story, s02, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1064 |
+| B1087 | adventure/voice/751f88c2.mp3 | The real letter is from Felix the ferret. His big wheel is stuck! | Day 15, F, not on yet ("Felix's Fun Fair"), the story, s02, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1064 |
+| B1088 | adventure/voice/8f42ae6c.mp3 | We hurry down the country lane, past the farm, to the fair on the grassy hill. | Day 15, F, not on yet ("Felix's Fun Fair"), the story, s03, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. | public/talk-stories.js:1067 |
+| B1089 | adventure/voice/5676fed3.mp3 | The fair opens soon, but the Ferris wheel won't go round. Let's find out why! | Day 15, F, not on yet ("Felix's Fun Fair"), the story, s04, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1069 |
+| B1090 | adventure/voice/89a2a984.mp3 | The fair opens soon, but the big wheel won't go! | Day 15, F, not on yet ("Felix's Fun Fair"), the story, s04, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1069 |
+| B1091 | adventure/voice/ab7ca24d.mp3 | Look! A long, fuzzy scarf is tangled all around the wheel's big wooden gears. | Day 15, F, not on yet ("Felix's Fun Fair"), the story, s05, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1072 |
+| B1092 | adventure/voice/d7323ce8.mp3 | A fuzzy scarf is stuck in the wheel! | Day 15, F, not on yet ("Felix's Fun Fair"), the story, s05, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1072 |
+| B1093 | adventure/voice/339931aa.mp3 | The scarf goes on and on, down the hill. Let's follow it! At the end sits a granny goat, knitting away. | Day 15, F, not on yet ("Felix's Fun Fair"), the story, s06, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1075 |
+| B1094 | adventure/voice/502604b4.mp3 | The granny goat giggles. Her yarn rolled away! We help her fold the long scarf, nice and neat. | Day 15, F, not on yet ("Felix's Fun Fair"), the story, s07, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1077 |
+| B1095 | adventure/voice/e108008e.mp3 | We help the granny goat fold up the long scarf. | Day 15, F, not on yet ("Felix's Fun Fair"), the story, s07, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. | public/talk-stories.js:1077 |
+| B1096 | adventure/voice/b7def40f.mp3 | Now let's give the big wheel a push. One, two, three! It turns faster and faster! | Day 15, F, not on yet ("Felix's Fun Fair"), the story, s08, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1080 |
+| B1097 | adventure/voice/39f04bdb.mp3 | Push, one, two, three! Faster and faster! | Day 15, F, not on yet ("Felix's Fun Fair"), the story, s08, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1080 |
+| B1098 | adventure/voice/2a05122f.mp3 | The Ferris wheel spins round and round, and its little lights twinkle on. What a fine sight! | Day 15, F, not on yet ("Felix's Fun Fair"), the ending, e01, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1085 |
+| B1099 | adventure/voice/492c87c5.mp3 | The big wheel spins round and round. What a fine sight! | Day 15, F, not on yet ("Felix's Fun Fair"), the ending, e01, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1085 |
+| B1100 | adventure/voice/8ed6d49f.mp3 | We ride all the way to the top and share sweet fudge with Felix and the granny goat. | Day 15, F, not on yet ("Felix's Fun Fair"), the ending, e02, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. | public/talk-stories.js:1088 |
+| B1101 | adventure/voice/5be1518b.mp3 | The granny goat knits us a funny little hat with a pom-pom. Thank you, friends! | Day 15, F, not on yet ("Felix's Fun Fair"), the ending, e03, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1090 |
+| B1102 | adventure/voice/d23b4a58.mp3 | The goat knits us a funny little hat. Thank you, friends! | Day 15, F, not on yet ("Felix's Fun Fair"), the ending, e03, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1090 |
+| B1103 | adventure/voice/0e48626f.mp3 | What a fantastic fair! A gold star for Felix's fair on our helper map! | Day 15, F, not on yet ("Felix's Fun Fair"), the ending, e04, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1093 |
+| B1104 | adventure/voice/182bdb1c.mp3 | What a fantastic day! A gold star for our helper map! | Day 15, F, not on yet ("Felix's Fun Fair"), the ending, e04, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1093 |
+| B1105 | adventure/voice/88e22b20.mp3 | Pelly the pelican brought us a letter. Oops! That's a tiny cactus in a pot! | Day 15, K, not on yet ("Coco's Carousel"), the story, s01, both ages. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1104 |
+| B1106 | adventure/voice/88eeb008.mp3 | Here's the real letter. It's from Coco the kangaroo. Her carousel stopped, and its key is lost! | Day 15, K, not on yet ("Coco's Carousel"), the story, s02, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1106 |
+| B1107 | adventure/voice/dd8e1f3b.mp3 | The real letter is from Coco the kangaroo. Her key is lost! | Day 15, K, not on yet ("Coco's Carousel"), the story, s02, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1106 |
+| B1108 | adventure/voice/0a909248.mp3 | We hop up the hill path to the carnival, with its striped tents and a little Ferris wheel. | Day 15, K, not on yet ("Coco's Carousel"), the story, s03, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. | public/talk-stories.js:1109 |
+| B1109 | adventure/voice/cfca5fe9.mp3 | The carousel won't go round without its big brass key. Let's find the key for the carousel! | Day 15, K, not on yet ("Coco's Carousel"), the story, s04, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1111 |
+| B1110 | adventure/voice/0f36d83a.mp3 | The carousel won't go round! Let's find its key. | Day 15, K, not on yet ("Coco's Carousel"), the story, s04, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1111 |
+| B1111 | adventure/voice/27ab9224.mp3 | We peek behind the candy stand. Just pink cotton candy, no key! | Day 15, K, not on yet ("Coco's Carousel"), the story, s05, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1114 |
+| B1112 | adventure/voice/269054a3.mp3 | We peek by the candy stand. No key! | Day 15, K, not on yet ("Coco's Carousel"), the story, s05, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1114 |
+| B1113 | adventure/voice/be7f081a.mp3 | A curious cat on the popcorn cart waves his paw up at the sky. Thank you, cat! | Day 15, K, not on yet ("Coco's Carousel"), the story, s06, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1117 |
+| B1114 | adventure/voice/b623e252.mp3 | Up on the Ferris wheel sits a silly cockatoo, with the shiny key in her beak! | Day 15, K, not on yet ("Coco's Carousel"), the story, s07, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1119 |
+| B1115 | adventure/voice/3353aa26.mp3 | A silly cockatoo has the key! | Day 15, K, not on yet ("Coco's Carousel"), the story, s07, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1119 |
+| B1116 | adventure/voice/e194da85.mp3 | We hold up a tasty cupcake. The cockatoo flutters down and swaps the key for the cupcake! | Day 15, K, not on yet ("Coco's Carousel"), the story, s08, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1122 |
+| B1117 | adventure/voice/a36c814c.mp3 | We hold up a cupcake. The cockatoo swaps it for the key! | Day 15, K, not on yet ("Coco's Carousel"), the story, s08, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1122 |
+| B1118 | adventure/voice/6a22b0a8.mp3 | Coco turns the key, click, click! The carousel spins, and happy music plays. | Day 15, K, not on yet ("Coco's Carousel"), the ending, e01, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1127 |
+| B1119 | adventure/voice/5cb472e7.mp3 | Coco turns the key. The carousel spins! | Day 15, K, not on yet ("Coco's Carousel"), the ending, e01, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1127 |
+| B1120 | adventure/voice/c8465d82.mp3 | We all ride the carousel. Echo picks a camel with a bright blue saddle. | Day 15, K, not on yet ("Coco's Carousel"), the ending, e02, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. | public/talk-stories.js:1130 |
+| B1121 | adventure/voice/390d56b7.mp3 | Coco gives us a shiny copper coin to keep. Thank you, friends! | Day 15, K, not on yet ("Coco's Carousel"), the ending, e03, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1132 |
+| B1122 | adventure/voice/8d78937c.mp3 | Coco gives us a shiny coin. Thank you, friends! | Day 15, K, not on yet ("Coco's Carousel"), the ending, e03, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1132 |
+| B1123 | adventure/voice/aa254284.mp3 | Come back soon, Coco! A gold star for the carnival on our helper map! | Day 15, K, not on yet ("Coco's Carousel"), the ending, e04, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1135 |
+| B1124 | adventure/voice/39770ce8.mp3 | Come back soon! A gold star for our helper map! | Day 15, K, not on yet ("Coco's Carousel"), the ending, e04, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1135 |
+| B1125 | adventure/voice/47b737e1.mp3 | Pelly the pelican brought us a letter. Oops! That's a pair of swim goggles! | Day 15, G, not on yet ("Gabby's Golf Game"), the story, s01, both ages. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1146 |
+| B1126 | adventure/voice/ba6c1571.mp3 | Here's the real letter. It's from Gabby the gorilla. Her golf balls blew all over her golf course! | Day 15, G, not on yet ("Gabby's Golf Game"), the story, s02, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1148 |
+| B1127 | adventure/voice/835b83ab.mp3 | The real letter is from Gabby the gorilla. Her golf balls blew away! | Day 15, G, not on yet ("Gabby's Golf Game"), the story, s02, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1148 |
+| B1128 | adventure/voice/bef486fa.mp3 | We hurry down the winding path and through the little white gate to the golf course. | Day 15, G, not on yet ("Gabby's Golf Game"), the story, s03, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. | public/talk-stories.js:1151 |
+| B1129 | adventure/voice/64f0f399.mp3 | A gust of wind tipped over the bucket, and every golf ball is gone. Let's look! | Day 15, G, not on yet ("Gabby's Golf Game"), the story, s04, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1153 |
+| B1130 | adventure/voice/f80cd68c.mp3 | Every golf ball is gone! Let's look. | Day 15, G, not on yet ("Gabby's Golf Game"), the story, s04, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1153 |
+| B1131 | adventure/voice/7bd4059d.mp3 | Look, three golf balls rolled into the garden, under the big pumpkin leaves! | Day 15, G, not on yet ("Gabby's Golf Game"), the story, s05, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1156 |
+| B1132 | adventure/voice/d1eec690.mp3 | Three balls are in the garden! | Day 15, G, not on yet ("Gabby's Golf Game"), the story, s05, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1156 |
+| B1133 | adventure/voice/415ee601.mp3 | Two more balls are floating in the pond. A friendly goldfish nudges them to the edge. Thank you! | Day 15, G, not on yet ("Gabby's Golf Game"), the story, s06, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1159 |
+| B1134 | adventure/voice/5541905f.mp3 | One more ball! A cheeky gull is sitting on the windmill with the ball in its beak. | Day 15, G, not on yet ("Gabby's Golf Game"), the story, s07, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1161 |
+| B1135 | adventure/voice/5159125e.mp3 | A gull has the last ball! | Day 15, G, not on yet ("Gabby's Golf Game"), the story, s07, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1161 |
+| B1136 | adventure/voice/58347485.mp3 | Let's ask the gull nicely. Please give it back! Plop, the ball drops into Gabby's hands. | Day 15, G, not on yet ("Gabby's Golf Game"), the story, s08, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1164 |
+| B1137 | adventure/voice/e132edac.mp3 | Please give it back, gull! Plop! | Day 15, G, not on yet ("Gabby's Golf Game"), the story, s08, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1164 |
+| B1138 | adventure/voice/079c114f.mp3 | All six balls are back in the bucket. Now the golf game can begin! | Day 15, G, not on yet ("Gabby's Golf Game"), the ending, e01, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1169 |
+| B1139 | adventure/voice/fbfcf8bb.mp3 | Every ball is back! The golf game can begin! | Day 15, G, not on yet ("Gabby's Golf Game"), the ending, e01, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1169 |
+| B1140 | adventure/voice/ffc607c4.mp3 | Echo taps his ball. It rolls right into the mouth of a goofy frog statue. Gulp! | Day 15, G, not on yet ("Gabby's Golf Game"), the ending, e02, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1172 |
+| B1141 | adventure/voice/8e7d74af.mp3 | Gabby shares a basket of goodies with everyone, even the gull. Yum! | Day 15, G, not on yet ("Gabby's Golf Game"), the ending, e03, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1174 |
+| B1142 | adventure/voice/4cf867e0.mp3 | Gabby shares her goodies. Yum! | Day 15, G, not on yet ("Gabby's Golf Game"), the ending, e03, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1174 |
+| B1143 | adventure/voice/66f1ba49.mp3 | What a good day! A gold star for Gabby's golf course on our helper map! | Day 15, G, not on yet ("Gabby's Golf Game"), the ending, e04, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1177 |
+| B1144 | adventure/voice/ac8bc9f6.mp3 | What a good day! A gold star for our helper map! | Day 15, G, not on yet ("Gabby's Golf Game"), the ending, e04, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1177 |
+| B1145 | adventure/voice/56fe055b.mp3 | Pelly the pelican brought us a letter. Oops! That's a little polka-dot shirt! | Day 15, SH, not on yet ("Shona's Shower Day"), the story, s01, both ages. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1188 |
+| B1146 | adventure/voice/93438774.mp3 | Here's the real letter. It's from Shona the sheep. She rolled in the mud before her farm party! | Day 15, SH, not on yet ("Shona's Shower Day"), the story, s02, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1190 |
+| B1147 | adventure/voice/b2d2ac91.mp3 | The real letter is from Shona the sheep. She's all muddy! | Day 15, SH, not on yet ("Shona's Shower Day"), the story, s02, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1190 |
+| B1148 | adventure/voice/cdf6c0b9.mp3 | We hurry down the path to the farm, past the little old red shed. | Day 15, SH, not on yet ("Shona's Shower Day"), the story, s03, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. | public/talk-stories.js:1193 |
+| B1149 | adventure/voice/7ab0d3ec.mp3 | Shona has big mud spots all over her wool, and the party starts soon! Let's give her a shower. | Day 15, SH, not on yet ("Shona's Shower Day"), the story, s04, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1195 |
+| B1150 | adventure/voice/8728547c.mp3 | Shona is all muddy! Let's give her a shower. | Day 15, SH, not on yet ("Shona's Shower Day"), the story, s04, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1195 |
+| B1151 | adventure/voice/1bf8d68b.mp3 | We rub lots of pink shampoo into her wool. Look at all the bubbles! | Day 15, SH, not on yet ("Shona's Shower Day"), the story, s05, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1198 |
+| B1152 | adventure/voice/d1988739.mp3 | We rub in pink shampoo. Bubbles! | Day 15, SH, not on yet ("Shona's Shower Day"), the story, s05, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1198 |
+| B1153 | adventure/voice/9ed28e90.mp3 | The bubbles make funny shapes on her wool, a tall hat, a long beard and a big bow! | Day 15, SH, not on yet ("Shona's Shower Day"), the story, s06, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1201 |
+| B1154 | adventure/voice/5db66c9b.mp3 | Now Shona gives a big wiggly shake. Splash! Water flies everywhere, and we get wet too! | Day 15, SH, not on yet ("Shona's Shower Day"), the story, s07, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1203 |
+| B1155 | adventure/voice/70d5f878.mp3 | Shona gives a big shake. Splash! | Day 15, SH, not on yet ("Shona's Shower Day"), the story, s07, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1203 |
+| B1156 | adventure/voice/f936555a.mp3 | We wrap her up in a big soft sheet to dry. She's warm and cozy. | Day 15, SH, not on yet ("Shona's Shower Day"), the story, s08, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. | public/talk-stories.js:1206 |
+| B1157 | adventure/voice/2a714d54.mp3 | We wrap her in a soft sheet. Cozy! | Day 15, SH, not on yet ("Shona's Shower Day"), the story, s08, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1206 |
+| B1158 | adventure/voice/d0dc37d0.mp3 | Ta-da! Shona's wool is clean, fluffy and shiny, just like a soft white cloud! | Day 15, SH, not on yet ("Shona's Shower Day"), the ending, e01, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1211 |
+| B1159 | adventure/voice/039dff93.mp3 | Shona is clean, fluffy and shiny! | Day 15, SH, not on yet ("Shona's Shower Day"), the ending, e01, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1211 |
+| B1160 | adventure/voice/309f8c77.mp3 | At the farm party, we shuffle our feet and dance with all of Shona's farm friends. | Day 15, SH, not on yet ("Shona's Shower Day"), the ending, e02, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. | public/talk-stories.js:1214 |
+| B1161 | adventure/voice/52817ede.mp3 | Shona shares a soft little ball of her clean wool with us. Thank you, friends! | Day 15, SH, not on yet ("Shona's Shower Day"), the ending, e03, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1216 |
+| B1162 | adventure/voice/b5077e9b.mp3 | Shona shares a ball of wool with us. Thank you! | Day 15, SH, not on yet ("Shona's Shower Day"), the ending, e03, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1216 |
+| B1163 | adventure/voice/10982297.mp3 | See it shine? A gold star for Shona's farm on our helper map! | Day 15, SH, not on yet ("Shona's Shower Day"), the ending, e04, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1219 |
+| B1164 | adventure/voice/12adc069.mp3 | See it shine? A gold star for our helper map! | Day 15, SH, not on yet ("Shona's Shower Day"), the ending, e04, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1219 |
+| B1165 | adventure/voice/1c8edfaf.mp3 | Pelly the pelican brought us a letter. Oops! That's a rubber chicken! | Day 15, CH, not on yet ("Chico's Treasure Chest"), the story, s01, both ages. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1230 |
+| B1166 | adventure/voice/ddbe4c99.mp3 | Here's the real letter. It's from Chico the chinchilla. He hid a treasure chest for a party and forgot where! | Day 15, CH, not on yet ("Chico's Treasure Chest"), the story, s02, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1232 |
+| B1167 | adventure/voice/8588dc18.mp3 | The real letter is from Chico the chinchilla. He can't find his treasure! | Day 15, CH, not on yet ("Chico's Treasure Chest"), the story, s02, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1232 |
+| B1168 | adventure/voice/fcabb0fc.mp3 | The wind is chilly on the hill, so we hurry up the winding path to Chico's little stone house. | Day 15, CH, not on yet ("Chico's Treasure Chest"), the story, s03, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. | public/talk-stories.js:1235 |
+| B1169 | adventure/voice/6c7ae034.mp3 | Chico hid a treasure chest for his friends to find, but now he can't find it. Let's find the chest! | Day 15, CH, not on yet ("Chico's Treasure Chest"), the story, s04, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1237 |
+| B1170 | adventure/voice/b423657d.mp3 | Chico can't find his treasure chest! Let's find the chest. | Day 15, CH, not on yet ("Chico's Treasure Chest"), the story, s04, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1237 |
+| B1171 | adventure/voice/f74f1cca.mp3 | Look, an arrow in chalk on a big rock. Chico drew chalk arrows to show the way! | Day 15, CH, not on yet ("Chico's Treasure Chest"), the story, s05, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1240 |
+| B1172 | adventure/voice/256f4056.mp3 | A chalk arrow! This way! | Day 15, CH, not on yet ("Chico's Treasure Chest"), the story, s05, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1240 |
+| B1173 | adventure/voice/e56fd208.mp3 | The chalk arrows stop at the fence. Chirp, chirp! A little chickadee waves her wing at the old oak tree. | Day 15, CH, not on yet ("Chico's Treasure Chest"), the story, s06, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1243 |
+| B1174 | adventure/voice/c75d9c3b.mp3 | At the oak tree, Chico starts to chuckle. Now he remembers! The chest is under the leaves. | Day 15, CH, not on yet ("Chico's Treasure Chest"), the story, s07, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1245 |
+| B1175 | adventure/voice/cd4b42c2.mp3 | Chico starts to chuckle. It's under the leaves! | Day 15, CH, not on yet ("Chico's Treasure Chest"), the story, s07, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1245 |
+| B1176 | adventure/voice/1de3da5f.mp3 | We brush the leaves away, and there's the chest! Chico unhooks its little gold chain. | Day 15, CH, not on yet ("Chico's Treasure Chest"), the story, s08, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1248 |
+| B1177 | adventure/voice/560045b0.mp3 | There's the chest! Chico unhooks the chain. | Day 15, CH, not on yet ("Chico's Treasure Chest"), the story, s08, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1248 |
+| B1178 | adventure/voice/746159bd.mp3 | Chico lifts the lid. Inside is a treasure picnic, with cheese, crackers and berries for everyone! | Day 15, CH, not on yet ("Chico's Treasure Chest"), the ending, e01, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1253 |
+| B1179 | adventure/voice/d31ea8c4.mp3 | Inside is a picnic! Cheese for everyone! | Day 15, CH, not on yet ("Chico's Treasure Chest"), the ending, e01, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1253 |
+| B1180 | adventure/voice/bcd92799.mp3 | We sit on a picnic blanket with the chickadee and chomp, chomp, chomp on the yummy treats. | Day 15, CH, not on yet ("Chico's Treasure Chest"), the ending, e02, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. | public/talk-stories.js:1256 |
+| B1181 | adventure/voice/cf983454.mp3 | Chico gives us a big hug, cheek to cheek. Thank you, treasure hunters! | Day 15, CH, not on yet ("Chico's Treasure Chest"), the ending, e03, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1258 |
+| B1182 | adventure/voice/5ded3b4c.mp3 | A big hug, cheek to cheek. Thank you! | Day 15, CH, not on yet ("Chico's Treasure Chest"), the ending, e03, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1258 |
+| B1183 | adventure/voice/bdf712eb.mp3 | What a cheerful day! A gold star for Chico's oak tree on our helper map! | Day 15, CH, not on yet ("Chico's Treasure Chest"), the ending, e04, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1261 |
+| B1184 | adventure/voice/72c7d025.mp3 | What a cheerful day! A gold star for our helper map! | Day 15, CH, not on yet ("Chico's Treasure Chest"), the ending, e04, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1261 |
+| B1185 | adventure/voice/be047496.mp3 | Pelly the pelican brought us a letter. Oops! That's a big blue thermos! | Day 15, TH, not on yet ("Thea's Thatched Roof"), the story, s01, both ages. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1272 |
+| B1186 | adventure/voice/ecbf4525.mp3 | Here's the real letter. It's from Thea the hedgehog. The wind blew a hole in the thatch on her roof! | Day 15, TH, not on yet ("Thea's Thatched Roof"), the story, s02, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1274 |
+| B1187 | adventure/voice/fdd675e4.mp3 | The real letter is from Thea the hedgehog. Her roof thatch has a hole! | Day 15, TH, not on yet ("Thea's Thatched Roof"), the story, s02, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1274 |
+| B1188 | adventure/voice/c11ae1c9.mp3 | We hurry down the lane and through a little thicket to Thea's cozy cottage. | Day 15, TH, not on yet ("Thea's Thatched Roof"), the story, s03, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. | public/talk-stories.js:1277 |
+| B1189 | adventure/voice/f95dd364.mp3 | Drip, drop! Last night's rain came through the hole, and Thea caught it in a thimble. Silly Thea! | Day 15, TH, not on yet ("Thea's Thatched Roof"), the story, s04, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1279 |
+| B1190 | adventure/voice/d45356f8.mp3 | Drip, drop! Thea caught the rain in a thimble! | Day 15, TH, not on yet ("Thea's Thatched Roof"), the story, s04, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1279 |
+| B1191 | adventure/voice/5206cd50.mp3 | Thea holds up her thumb toward the hill. The field by the barn is full of golden straw! | Day 15, TH, not on yet ("Thea's Thatched Roof"), the story, s05, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1282 |
+| B1192 | adventure/voice/66cd0d51.mp3 | Thea's thumb shows the way. Golden straw, over there! | Day 15, TH, not on yet ("Thea's Thatched Roof"), the story, s05, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1282 |
+| B1193 | adventure/voice/ba5c55d3.mp3 | A fuzzy purple thistle tickles Echo's wing as we pass. Hee hee! | Day 15, TH, not on yet ("Thea's Thatched Roof"), the story, s06, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1285 |
+| B1194 | adventure/voice/7ab78219.mp3 | Look, a thorn on the bramble by the gate. We step around it and pick up big bundles of straw. | Day 15, TH, not on yet ("Thea's Thatched Roof"), the story, s07, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. | public/talk-stories.js:1287 |
+| B1195 | adventure/voice/ec8c60fc.mp3 | Look, a thorn! We step around it. | Day 15, TH, not on yet ("Thea's Thatched Roof"), the story, s07, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1287 |
+| B1196 | adventure/voice/184f2728.mp3 | We tie each bundle with a thin piece of string, and off we go, back to Thea's cottage. | Day 15, TH, not on yet ("Thea's Thatched Roof"), the story, s08, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. | public/talk-stories.js:1290 |
+| B1197 | adventure/voice/f36b4445.mp3 | We tie the straw with thin string! | Day 15, TH, not on yet ("Thea's Thatched Roof"), the story, s08, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1290 |
+| B1198 | adventure/voice/fa633561.mp3 | Thump, thump! Up on the roof, Thea taps fresh straw into the hole, one bundle at a time. | Day 15, TH, not on yet ("Thea's Thatched Roof"), the ending, e01, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1295 |
+| B1199 | adventure/voice/5dcae057.mp3 | Thump, thump! Thea fixes the roof. | Day 15, TH, not on yet ("Thea's Thatched Roof"), the ending, e01, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1295 |
+| B1200 | adventure/voice/04317fb8.mp3 | Thud! The last bundle lands on the roof, and Thea pats it neatly into place. The hole is gone! | Day 15, TH, not on yet ("Thea's Thatched Roof"), the ending, e02, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1298 |
+| B1201 | adventure/voice/909466ba.mp3 | Thea pours warm cocoa for everyone. Thanks for helping, friends! | Day 15, TH, not on yet ("Thea's Thatched Roof"), the ending, e03, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1300 |
+| B1202 | adventure/voice/9c795ec3.mp3 | Thea pours us cocoa. Thanks, friends! | Day 15, TH, not on yet ("Thea's Thatched Roof"), the ending, e03, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1300 |
+| B1203 | adventure/voice/c19d4b12.mp3 | Thea's roof is thick and cozy now. A gold star for Thea's cottage on our helper map! | Day 15, TH, not on yet ("Thea's Thatched Roof"), the ending, e04, ages 5-8. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1303 |
+| B1204 | adventure/voice/65fc34b6.mp3 | Her roof is thick and cozy! A gold star for our helper map! | Day 15, TH, not on yet ("Thea's Thatched Roof"), the ending, e04, ages 3-4. | A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds ("Ah-choo!", "Honk-shoo") are story words, never a speech target. Has a "!": a little lift, not a shout. | public/talk-stories.js:1303 |
 
 Not in this list because they speak nothing: Home, setup, settings, the voice
 picker, the mic-permission screens, the chest captions and every in-round label.
@@ -1240,7 +1400,7 @@ With the sound models on, Echo says the words and one take of Rachel's recorded 
 | TH (as in 'thumb') | Peek your tongue between your teeth and blow soft | T H |
 | TH (voiced, as in 'the') | Tongue between your teeth and buzz | T H |
 
-{n}: the number words the page knows are 2 → "two", 3 → "three", 4 → "four", 5 → "five", 6 → "six" (public/charge.html:647). The ones actually used: **five** on every normal prompt (`CHARGE_NEED = 5`, public/sona.js:3057) and **three** during a retry window after a miss (`burstAndVerify(3)`, public/charge.html:2401). The cued form can fire with "three" only when a syllable round stepped down to the sound and the child then tapped Echo.
+{n}: the number words the page knows are 2 → "two", 3 → "three", 4 → "four", 5 → "five", 6 → "six" (public/charge.html:647). The ones actually used: **five** on every normal prompt (`CHARGE_NEED = 5`, public/sona.js:3079) and **three** during a retry window after a miss (`burstAndVerify(3)`, public/charge.html:2401). The cued form can fire with "three" only when a syllable round stepped down to the sound and the child then tapped Echo.
 
 Worth Rachel's eye: the comma/"like" cut leaves "Lips together" (B), "Like T" (D), "Like K" (G), "Like F" (V), "Teeth together" (S), "Pop it" (CH), "Like CH" (J) — a G round opens "Ready? Like K, and make your G sound, five times.". TH and THV are both spelled "T H", so only the cue tells them apart.
 
@@ -1416,7 +1576,7 @@ on a tap. {n} as in C1. **Best left to TTS in the cloned voice.**
 | Blends | S | spa, ski, snoo, smoh, stay | off |
 | Blends | L | blah, flee, clue, glow, play | off |
 
-**{target} = a word** — the sound's words at the place practised (`Sona.soundPos()`): an SLP's homework position first, for its own sounds, then the one chosen in Settings (default Beginning); vocalic R exists only for R, blends only for R, S and L, so another sound picked there uses the start of a word; THV has no Beginning words, so it uses all ten. Any other bank word reaches this prompt when an SLP's homework names it. The whole bank is Part D (public/sona.js:2415).
+**{target} = a word** — the sound's words at the place practised (`Sona.soundPos()`): an SLP's homework position first, for its own sounds, then the one chosen in Settings (default Beginning); vocalic R exists only for R, blends only for R, S and L, so another sound picked there uses the start of a word; THV has no Beginning words, so it uses all ten. Any other bank word reaches this prompt when an SLP's homework names it. The whole bank is Part D (public/sona.js:2437).
 
 **{target} = a sentence** — one of 5 frames with a bank word dropped in (public/gamecontent.js:281): "I see a ___.", "I have a ___.", "Look at the ___.", "Here is a ___.", "I like my ___.". The word comes from the same practice position as the word round (homework first, then Settings; default Beginning; "Mixed" uses the bank across positions, with the same exclusions for ages 2–4). The available frames depend on each word's form.
 
@@ -1480,7 +1640,7 @@ says the whole ask as ONE line in his own voice, the syllable or word last and a
 a pause, because nothing past the bare sound is recorded; then "Go!". The line is downloaded
 before the syllable is shown; if it does not come, or will not play, the card stays on the
 sound alone and "To keep playing, say" plus Rachel's recording plays instead (B5). What a card
-asks comes from one reader, `Sona.gameAsk` (public/sona.js:2355; which voice at public/sona.js:2344):
+asks comes from one reader, `Sona.gameAsk` (public/sona.js:2377; which voice at public/sona.js:2366):
 the sound alone, then one syllable a card, then a short word, as far as that child's
 cards go. Screen: "Say “ree” for wave 2!". The card hears only a voice of the right
 kind — it cannot tell a syllable from the bare sound — and nothing here says "correct".
@@ -2364,7 +2524,7 @@ After each narrated page (B9), Echo asks `Can you say... {word}.`, or `One more 
 | Chip's Cherry Pie | CH | chair, chipmunk, chimney, cherries, chase, chick, chop, chocolate | cheer, chew, chalk, champion |
 | Theo's Big Show | TH | thimble, theater, thick, thunder, think, thistle, thump, thin | thousand, thud, thank, thumbs |
 
-### C11b — Later talking stories (after the 14 days): 12 stories, 144 page keys
+### C11b — Later talking stories (after the 14 days): 20 stories, 240 page keys
 
 The same asks as C11, one story a day after a child has finished the 14 daily stories, in the sound Day 1 uses. A story marked "not on yet" is never shown: it waits for its pictures and Rachel's reading (`ready` in STORY_TALK_MORE).
 
@@ -2382,12 +2542,20 @@ The same asks as C11, one story a day after a child has finished the 14 daily st
 | Sadie's Sailboat | Day 18, S, not on yet | S | sunglasses, salamander, sun, sail, safe, sew, sailboat, seat | sailing, silver, circle, summer |
 | Sasha's Sunflowers | Day 19, S, not on yet | S | sack, sunflower, city, soil, sip, sun, sing, seed | sunny, seven, sunshine, seeds |
 | Simon's Seesaw | Day 20, S, not on yet | S | sun, seesaw, sidewalk, seat, sand, saw, safe, sit | super, sister, silly, supper |
+| Lola's Lemonade Stand | Day 15, L, not on yet | L | lollipop, llama, lane, lemons, lawn, ladder, lizard, lemonade | line, leaf, laugh, lucky |
+| Zola's Zeppelin | Day 15, Z, not on yet | Z | zebra, zeppelin, zucchini, zipper, zip, zany, zinnias, zoom | zigzag, zoo, zillion, zinnia |
+| Felix's Fun Fair | Day 15, F, not on yet | F | funnel, ferret, farm, fair, fuzzy, follow, fold, faster | fine, fudge, funny, fantastic |
+| Coco's Carousel | Day 15, K, not on yet | K | cactus, kangaroo, carnival, carousel, candy, cat, cockatoo, cupcake | key, camel, coin, come |
+| Gabby's Golf Game | Day 15, G, not on yet | G | goggles, gorilla, gate, golf, garden, goldfish, gull, give | game, goofy, goodies, good |
+| Shona's Shower Day | Day 15, SH, not on yet | SH | shirt, sheep, shed, shower, shampoo, shapes, shake, sheet | shiny, shuffle, shares, shine |
+| Chico's Treasure Chest | Day 15, CH, not on yet | CH | chicken, chinchilla, chilly, chest, chalk, chirp, chuckle, chain | cheese, chomp, cheek, cheerful |
+| Thea's Thatched Roof | Day 15, TH, not on yet | TH | thermos, thatch, thicket, thimble, thumb, thistle, thorn, thin | thump, thud, thanks, thick |
 
 ---
 
 ## Part D — The word bank
 
-Every practice word, by sound and by where the sound sits in the word (public/sona.js:2415).
+Every practice word, by sound and by where the sound sits in the word (public/sona.js:2437).
 **Best left to TTS in the cloned voice** — words render fine; only bare sounds do
 not. Listed so nothing is hidden, and because a word can reach the child in these ways:
 the word rung and the sentence rung of a practice round (both at the practice position:
@@ -2445,11 +2613,11 @@ these reach a child today; if one comes back, its lines move up into B or C.
 
 ### E1 — Today's chapter (`chapter.html`, parked): 30 chapters, 210 spoken pages
 
-The chapter reader was parked on 19 Sep 2026 and stayed parked when the picture books came back (C9); `tests/day1.mjs` pins that Home has no door to it. When the page opens, each page is read aloud as it turns — the chapter's opening line, then its six beats (public/chapter.html:124, public/chapter.html:174); "Read it to me" says the same page again (public/chapter.html:203). Tomorrow's hook is shown on the finish card, not spoken. The table is `EPISODES` (public/sona.js:1405). Read as a bedtime story if they ever come back: slower than the prompts, the last line of each page landing softly.
+The chapter reader was parked on 19 Sep 2026 and stayed parked when the picture books came back (C9); `tests/day1.mjs` pins that Home has no door to it. When the page opens, each page is read aloud as it turns — the chapter's opening line, then its six beats (public/chapter.html:124, public/chapter.html:174); "Read it to me" says the same page again (public/chapter.html:203). Tomorrow's hook is shown on the finish card, not spoken. The table is `EPISODES` (public/sona.js:1427). Read as a bedtime story if they ever come back: slower than the prompts, the last line of each page landing softly.
 
 One fixed line: "You did it! Three games are unlocked." — the finish card (public/chapter.html:196). Still has its "!" — the parked pages never got the calm rewrite.
 
-**Chapter 1 — The Star That Fell** (public/sona.js:1406)
+**Chapter 1 — The Star That Fell** (public/sona.js:1428)
 
 1. You are in the meadow when the sky drops something. It lands in the tall grass with a soft whump. The grass around it starts to glow.
 2. It is a star. A small one, about the size of your two hands together. It is shaking.
@@ -2459,7 +2627,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. It lifts off the grass. Just a little. Just enough to show you it wants to go home.
 7. Home is a very long way up. Echo looks at the sky, then at you. This is going to take a while.
 
-**Chapter 2 — The Bramble Path** (public/sona.js:1418)
+**Chapter 2 — The Bramble Path** (public/sona.js:1440)
 
 1. The only way out of the meadow is one narrow path. Overnight, the brambles have grown all the way across it.
 2. Thorns as long as your finger. Echo tries to squeeze through and comes back with one feather missing.
@@ -2469,7 +2637,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. You go through in a line. Echo first, then you, then the star bobbing along behind.
 7. On the other side there is a noise like a hundred spoons in a hundred cups. Water. A lot of water.
 
-**Chapter 3 — The River Crossing** (public/sona.js:1430)
+**Chapter 3 — The River Crossing** (public/sona.js:1452)
 
 1. The river is wide, loud, and moving fast. There is no bridge. There is no boat. There is just you.
 2. The star floats out over the water to have a look, and the wind pushes it straight back to you.
@@ -2479,7 +2647,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. Halfway across, a fish comes up beside you and just listens. Then another one. Then eleven more.
 7. You reach the far bank with wet shoes and a small crowd of fish watching you go.
 
-**Chapter 4 — The Whispering Woods** (public/sona.js:1442)
+**Chapter 4 — The Whispering Woods** (public/sona.js:1464)
 
 1. The trees here are old and standing close together. Say one word and the woods say it back to you, twice.
 2. Echo goes absolutely wild. A parrot in a place that repeats things is a parrot in heaven.
@@ -2489,7 +2657,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. Something is following you and copying you. Echo stops laughing and steps in front of you.
 7. It comes out of the ferns. It is about the size of a teacup, and it is extremely fluffy.
 
-**Chapter 5 — Pip** (public/sona.js:1454)
+**Chapter 5 — Pip** (public/sona.js:1476)
 
 1. It is a baby owl. It has one feather sticking straight up off its head, and it will not stop staring at you.
 2. Echo asks its name. The owl copies the question back instead of answering it. It is learning too.
@@ -2499,7 +2667,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. Echo names it Pip, on the grounds that it makes a sound like pip whenever it is pleased.
 7. Pip points a wing at the hills. There is a black opening in the rock, and the path goes straight into it.
 
-**Chapter 6 — The Cave of Echoes** (public/sona.js:1466)
+**Chapter 6 — The Cave of Echoes** (public/sona.js:1488)
 
 1. Inside the cave it is black. Not dim. Black. You cannot see your own hands in front of you.
 2. Then Pip makes one small nervous pip, and a ring of blue light spreads across the ceiling.
@@ -2509,7 +2677,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. The light reaches a wall that is not rock. It is flat, and somebody has drawn on it.
 7. Hundreds of drawings. And in every single one, somebody is holding a star.
 
-**Chapter 7 — The Drawings** (public/sona.js:1478)
+**Chapter 7 — The Drawings** (public/sona.js:1500)
 
 1. The drawings go on for further than you can walk in one go. They tell a story, left to right, like a very long comic.
 2. First panel: a person in a meadow, and a star falling out of the sky. That one looks familiar.
@@ -2519,7 +2687,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. There is no drawing of what happens after the ladder. Whoever drew all this never came back to finish it.
 7. Echo is very quiet, which for a parrot is unusual. Then Echo says: well. We had better go and look.
 
-**Chapter 8 — The Cloud Ladder** (public/sona.js:1490)
+**Chapter 8 — The Cloud Ladder** (public/sona.js:1512)
 
 1. The ladder is exactly where the drawing said it would be. Rungs of white cloud, going up and up until they are too small to see.
 2. Echo tests the bottom rung with one foot. It goes straight through it. Cloud is cloud.
@@ -2529,7 +2697,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. Pip refuses to fly and rides in your hood the whole way, which is somehow more tiring for you than for Pip.
 7. Near the top the air changes. It is moving. It is moving very fast.
 
-**Chapter 9 — The Windy Ridge** (public/sona.js:1502)
+**Chapter 9 — The Windy Ridge** (public/sona.js:1524)
 
 1. The top of the ladder comes out on a thin ridge of cloud, and the wind up here does not stop for a second.
 2. It pulls at your sleeves. It pulls at Echo's tail. It pulls sounds right out of the air and carries them off sideways.
@@ -2539,7 +2707,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. Pip flies ahead to scout, gets blown backwards past your head, and returns to the hood without comment.
 7. Through the blur you see it. Something enormous standing out in the open sky, and the wind is going around it.
 
-**Chapter 10 — The Sky Door** (public/sona.js:1514)
+**Chapter 10 — The Sky Door** (public/sona.js:1536)
 
 1. It is a door. It is taller than a tree and it is standing in the open air with nothing holding it up.
 2. No handle. No lock. No keyhole. Carved in the middle of it, at exactly your height, there is an ear.
@@ -2549,7 +2717,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. It swings open onto the night sky, closer than you have ever seen it, every star the size of a lamp.
 7. Your star leaps out of your coat and races for a gap in the pattern. And that is when you see the other gaps.
 
-**Chapter 11 — The Star Comes Back** (public/sona.js:1530)
+**Chapter 11 — The Star Comes Back** (public/sona.js:1552)
 
 1. Your star is home. It sits in its gap in the sky, blazing away, exactly the right shape for the space it left.
 2. You are about to go when it pops straight back out of the gap and lands on your shoulder.
@@ -2559,7 +2727,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. Eleven. Eleven stars that fell somewhere and never got back up.
 7. Pip is already looking down through the open door. Somewhere under all that cloud, eleven lights are waiting.
 
-**Chapter 12 — The Lantern City** (public/sona.js:1542)
+**Chapter 12 — The Lantern City** (public/sona.js:1564)
 
 1. You come down out of the clouds over a city made of lanterns. Thousands of them, strung between the rooftops, glowing orange.
 2. It is night here, but nobody has noticed. In a city of lanterns, night is just when the lights look nicer.
@@ -2569,7 +2737,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. It is up at the very top of the tallest post, above all the washing lines and the cats.
 7. So you start to climb. Twelve floors of ladders and roof tiles, and the light gets whiter the higher you go.
 
-**Chapter 13 — The Longest Night** (public/sona.js:1554)
+**Chapter 13 — The Longest Night** (public/sona.js:1576)
 
 1. At the top of the post, inside a glass lantern the size of a bathtub, a star is sitting with its arms around its knees.
 2. It has been in there so long that it thinks the lantern is the sky.
@@ -2579,7 +2747,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. The glass cools. The star stands up. It comes over to the little door in the side and looks out at you.
 7. As it steps out, every lantern in the city dims by exactly the same amount, and for the first time in years the people below look up.
 
-**Chapter 14 — Under the Ice** (public/sona.js:1566)
+**Chapter 14 — Under the Ice** (public/sona.js:1588)
 
 1. A frozen lake, flat and grey and bigger than the city was. Under your boots you can hear the ice creak.
 2. Something down there is glowing green through the ice, about the size of a dinner plate.
@@ -2589,7 +2757,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. A hole opens, no bigger than a plate. The green light comes up through it and turns gold in the air.
 7. Three stars now. Pip's hood is getting crowded, and Pip is very clear about it.
 
-**Chapter 15 — The Music Box** (public/sona.js:1578)
+**Chapter 15 — The Music Box** (public/sona.js:1600)
 
 1. The house has been empty a long time. The attic ladder comes down when you pull it, and dust falls on all three of you.
 2. In the corner, under a sheet, something is playing. Six notes, over and over, very slowly.
@@ -2599,7 +2767,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. It has been keeping time in here for years. Nobody ever told it how to stop.
 7. So you learn the six notes and say them back, and on the last one the star steps off the spindle and into your hand.
 
-**Chapter 16 — The Orchard** (public/sona.js:1590)
+**Chapter 16 — The Orchard** (public/sona.js:1612)
 
 1. Rows and rows of trees, all the same height, all quiet. Somewhere in the middle, one branch is bent almost to the ground.
 2. On the end of it hangs a fruit the size of your head, and it is glowing faintly through the skin.
@@ -2609,7 +2777,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. You wake it the polite way, which is with your voice and not with your hands.
 7. The branch springs straight the moment the fruit leaves it, and every other tree in the row shivers once, in order, all the way down.
 
-**Chapter 17 — The Ferry** (public/sona.js:1602)
+**Chapter 17 — The Ferry** (public/sona.js:1624)
 
 1. The road ends at the sea. There is a jetty, and a boat, and a very large creature asleep across the whole of it.
 2. It has whiskers like broom handles and it is snoring in a way that moves the water.
@@ -2619,7 +2787,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. You share what is left of your food, and you tell it where you are going and why.
 7. It slides off the jetty without a word and floats there, waiting, with its back flat like a raft.
 
-**Chapter 18 — The Deep** (public/sona.js:1614)
+**Chapter 18 — The Deep** (public/sona.js:1636)
 
 1. Out where the water goes from green to black, the ferry stops and points its nose straight down.
 2. Far below, so far it might be your eyes making it up, there is one small light.
@@ -2629,7 +2797,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. The light gets bigger. It is shut inside a shell the size of a door.
 7. You say something to the shell, the way you did to the sky door, and it opens without any fuss at all.
 
-**Chapter 19 — The Nest** (public/sona.js:1626)
+**Chapter 19 — The Nest** (public/sona.js:1648)
 
 1. On the cliffs above the beach there is a nest, and the nest is glittering.
 2. Bottle caps. Spoons. A watch. A doorknob. And near the middle, two lights that are none of those things.
@@ -2639,7 +2807,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. So you trade. You give it the shiniest thing you are carrying, which is the little brass key off the back of the music box.
 7. It takes the key, and it lets you take the two stars, and it watches you the whole way down the cliff path.
 
-**Chapter 20 — The Loose Thread** (public/sona.js:1638)
+**Chapter 20 — The Loose Thread** (public/sona.js:1660)
 
 1. Seven stars now. They ride in a loose cloud around your head, and you have stopped being able to count them without help.
 2. You are walking back towards the cloud ladder when Echo stops dead in the air.
@@ -2649,7 +2817,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. And somewhere up there a thread has come loose, and the stars have been slipping through the gap it left.
 7. The thread twitches once, all on its own, as though something at the far end of it just noticed you holding on.
 
-**Chapter 21 — Following the Thread** (public/sona.js:1654)
+**Chapter 21 — Following the Thread** (public/sona.js:1676)
 
 1. You wrap the thread around your hand and it lifts, gently, the way a kite pulls just before it goes.
 2. The ground drops away. The orchard, then the lake, then the lantern city, all of it going small underneath you.
@@ -2659,7 +2827,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. You go up through the place where the sky door was and out the other side, and there is no other side. There is just more sky.
 7. The thread ends at a stair. A spiral stair with no building around it, going up into the dark.
 
-**Chapter 22 — The Weaver's Stair** (public/sona.js:1666)
+**Chapter 22 — The Weaver's Stair** (public/sona.js:1688)
 
 1. The stair is made of the same silver as the thread, and every step gives a little under your weight, like rope.
 2. There is no rail. There is nothing to fall onto either, which Echo points out and immediately regrets pointing out.
@@ -2669,7 +2837,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. The stair narrows near the top, until it is one step wide and you are going up it sideways.
 7. Then the dark opens out, and there is a room, and in the room there is a loom the size of a house.
 
-**Chapter 23 — The Weaver** (public/sona.js:1678)
+**Chapter 23 — The Weaver** (public/sona.js:1700)
 
 1. She is very old and very small, and she is sitting at the loom with her hands in her lap, not weaving.
 2. The cloth on the loom is the night sky. You are seeing it from underneath, which nobody has ever done.
@@ -2679,7 +2847,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. She has not stopped because she is tired, although she is. She has stopped because she cannot do it on her own any more.
 7. You put your seven stars down on the floor of the room, and the whole place fills up with light.
 
-**Chapter 24 — What the Loom Needs** (public/sona.js:1690)
+**Chapter 24 — What the Loom Needs** (public/sona.js:1712)
 
 1. She picks up the shuttle and holds it out to you. It is wooden, worn smooth, and lighter than it looks.
 2. She says the loom does not run on hands. It never has.
@@ -2689,7 +2857,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. Her voice went a while ago. That is the night the thread came loose, and every night since has been a little darker.
 7. She puts the shuttle into your hand and closes your fingers around it, and she does not say anything else.
 
-**Chapter 25 — The Eighth Star** (public/sona.js:1702)
+**Chapter 25 — The Eighth Star** (public/sona.js:1724)
 
 1. You find the eighth star before you work out how to weave. It is tangled in the loose threads at the edge of the gap.
 2. It has been stuck there since the night it slipped, holding on so it would not fall like the others.
@@ -2699,7 +2867,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. One star back in the sky, and the smallest patch of the dark shape closes up around it.
 7. The Weaver laughs, which is a sound like a door that has not been opened in years.
 
-**Chapter 26 — The Unravelling** (public/sona.js:1714)
+**Chapter 26 — The Unravelling** (public/sona.js:1736)
 
 1. You wake up to a sound like a zip. Along the far edge of the loom, the weave is coming apart on its own.
 2. Threads are letting go one after another, faster than anybody could tie them back.
@@ -2709,7 +2877,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. Then the Weaver says your name, and tells you to stop grabbing and start talking.
 7. So you do. And the threads you speak to stop moving, and hang still, and wait.
 
-**Chapter 27 — The Two in the Dark** (public/sona.js:1726)
+**Chapter 27 — The Two in the Dark** (public/sona.js:1748)
 
 1. There is a corner of the sky where three stars fell on the same night, and nothing has ever been put back.
 2. It is the darkest place you have ever stood. Darker than the cave, because in the cave there was rock to touch.
@@ -2719,7 +2887,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. The second one is holding on to the first one and will not let go, so you carry the pair of them together.
 7. Coming out, you count. Two in your arms. One still missing. And no corner of the world left that you have not looked in.
 
-**Chapter 28 — The Last One** (public/sona.js:1738)
+**Chapter 28 — The Last One** (public/sona.js:1760)
 
 1. You look everywhere for the eleventh star. The Weaver studies the sky from underneath. Echo asks every bird between here and the sea.
 2. Nothing. Ten found, one gap left, and not one single idea between the four of you.
@@ -2729,7 +2897,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. The last star never went anywhere at all. It landed where the first one landed, on the same night, and it has been under the grass ever since, waiting for somebody to come back for it.
 7. It is small and it is cold, and when you pick it up it fits in one hand, exactly the way the first one did.
 
-**Chapter 29 — The Long Way Back Up** (public/sona.js:1750)
+**Chapter 29 — The Long Way Back Up** (public/sona.js:1772)
 
 1. Ten stars. You have ten stars and one spiral stair, and the stair is one step wide at the top.
 2. Echo carries two, badly. Pip carries one and will not be talked out of it.
@@ -2739,7 +2907,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. Then Pip picks it up again, because it is not Pip's star, and there is a sky waiting for it.
 7. At the top, the Weaver has the loom open and the shuttle ready. She has been up all night clearing the frame.
 
-**Chapter 30 — The Sky, Mended** (public/sona.js:1762)
+**Chapter 30 — The Sky, Mended** (public/sona.js:1784)
 
 1. The gap in the weave is the size of a door, and there are ten stars sitting on the floor of the room waiting to go through it.
 2. The Weaver cannot sing it shut. You already knew that. It is the reason you are the one holding the shuttle.
@@ -2829,10 +2997,10 @@ one of the five praise lines.
 - **The idle nudge** (public/charge.html:1963): would replay the prompt after 8 s of silence, up to twice. `armIdle()` is defined but never called; the not-heard path is the quiet screen (B4).
 - **"You did it."** (public/charge.html:2429): fallback praise only if `praiseLine` were missing — `sona.js` always provides it.
 - **"Let's try our {sound} sound again"** (public/charge.html:2393): fallback coaching only for a sound with no tip — all 19 have one.
-- **"Listen to Echo, then copy the sound!"** (public/sona.js:4638): the default cue for an unknown sound; the practice page forces the sound to one of the 19.
-- **`actionCue`, `repeatCue`, `coachLine`** (public/sona.js:4855, public/sona.js:4860, public/sona.js:4871): exported, no caller anywhere. Pre-calm wording — e.g. "Are you ready? Say rrrr 5 times!", "Repeat after me… rrrr!  Now you try — rrrr!", "Let's try again. Say rrrr! Pull your tongue back and up like a tiger growl — rrr!".
+- **"Listen to Echo, then copy the sound!"** (public/sona.js:4664): the default cue for an unknown sound; the practice page forces the sound to one of the 19.
+- **`actionCue`, `repeatCue`, `coachLine`** (public/sona.js:4881, public/sona.js:4886, public/sona.js:4897): exported, no caller anywhere. Pre-calm wording — e.g. "Are you ready? Say rrrr 5 times!", "Repeat after me… rrrr!  Now you try — rrrr!", "Let's try again. Say rrrr! Pull your tongue back and up like a tiger growl — rrr!".
 - **The conversation rung** (public/gamecontent.js:306): "Which do you like — a ___ or a ___?", "Do you want the ___ or the ___?", "Pick one — ___ or ___!", "Hmm… a ___ or a ___?" — the practice page keeps only items with a target (`it.t`) and these have none, so a conversation round falls back to the bare sound.
-- **The sound models as text** (public/sona.js:4706): puh, buh, mmm, nnn, tuh, duh, kuh, guh, ffff, vvvv, sss, zzz, shhh, chuh, juh, lll, rrrr, thhh, thuh — shown on screen, never sent to TTS, because a synthesized "rrrr" comes out mangled. The performed sound is Rachel's clip (Part A).
+- **The sound models as text** (public/sona.js:4732): puh, buh, mmm, nnn, tuh, duh, kuh, guh, ffff, vvvv, sss, zzz, shhh, chuh, juh, lll, rrrr, thhh, thuh — shown on screen, never sent to TTS, because a synthesized "rrrr" comes out mangled. The performed sound is Rachel's clip (Part A).
 
 ### E8 — Shown on screen, never spoken (so nobody records them by mistake)
 
@@ -2861,6 +3029,6 @@ folders; they were a wish-list. They are gone, and so is the old `tools/voicepag
 
 ---
 
-**Totals.** Part A: 19 sound models (38 files, Rachel's). Part B: **1044 fixed clips** to record. Part C: **84 template lines written out** (C1 38 + C2 38 + C7 8) plus 1510 fillers listed (19 cues, 19 sound names, 95 syllables, 5 sentence frames, 134 Feed Echo words, 8 game-card asks, 235 picture-game words, 554 book pages in 55 books, 120 talking-story page keys). Part D: **356 bank entries, 294 distinct words** (TTS). Part E: 269 parked/unlinked lines not to record (210 chapter pages, 43 Coach Call, 9 Speech Check, the rest single lines).
+**Totals.** Part A: 19 sound models (38 files, Rachel's). Part B: **1204 fixed clips** to record. Part C: **84 template lines written out** (C1 38 + C2 38 + C7 8) plus 1606 fillers listed (19 cues, 19 sound names, 95 syllables, 5 sentence frames, 134 Feed Echo words, 8 game-card asks, 235 picture-game words, 554 book pages in 55 books, 120 talking-story page keys). Part D: **356 bank entries, 294 distinct words** (TTS). Part E: 269 parked/unlinked lines not to record (210 chapter pages, 43 Coach Call, 9 Speech Check, the rest single lines).
 
-Record B first (1044 lines — an hour), then C1 and C2 (76 lines, where you perform the sound), and stop there: the rest of Part C and Part D are words, and words are what TTS already does well.
+Record B first (1204 lines — an hour), then C1 and C2 (76 lines, where you perform the sound), and stop there: the rest of Part C and Part D are words, and words are what TTS already does well.
