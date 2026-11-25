@@ -465,8 +465,9 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   const card = (id) => (shown.match(new RegExp('<article class="plan(?: best)?" id="' + id + '">[\\s\\S]*?<\\/article>')) || [""])[0];
   const pro = card("planPro"), clinic = card("planClinic");
   const terms = (p) => p.days + " days free, then " + p.price + " a month. Card required. Cancel during the trial and you pay nothing. One free trial per clinician.";
-  ok("the Sona Pro card: its name, its price a month and the trial's terms at the point of purchase, all lib/caseload's",
-    pro.includes("<h3>" + PRO.name + "</h3>") && pro.includes("<b>" + PRO.price + "</b> a month") && pro.includes('<p class="terms" id="proTerms">' + terms(PRO) + "</p>") &&
+  // Under the buttons, only "Cancel anytime." (Travis, 25 Nov 2026: "Literally just have it say like cancel anytime").
+  ok("the Sona Pro card: its name, its price a month (lib/caseload's), and \"Cancel anytime.\" under its button",
+    pro.includes("<h3>" + PRO.name + "</h3>") && pro.includes("<b>" + PRO.price + "</b> a month") && pro.includes('<p class="terms" id="proTerms">Cancel anytime.</p>') &&
     /<button class="btn" type="button" data-plan="pro" id="proGo">Try Sona Pro free<\/button>/.test(pro), pro.slice(0, 300));
   ok("the Sona Clinic card: the same, and its " + CLINIC.seats + " seats",
     clinic.includes("<h3>" + CLINIC.name + "</h3>") && clinic.includes("<b>" + CLINIC.price + "</b> a month") && clinic.includes('<p class="terms">' + terms(CLINIC) + "</p>") &&
@@ -488,10 +489,12 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   // WHAT PARENTS PAY (Travis, 17 Nov 2026), only where it is true: hidden
   // until /api/charter answers that families are paying. "$9.99", never
   // "$10"; App Store Connect owns the figure (NATIVE.md).
-  ok("the parents' price line, word for word, under Sona Pro, hidden until /api/charter says families pay",
-    /<p class="parent-price" id="parentPrice" hidden>Families on your link get every game at no cost\. Parents who buy Sona on their own pay \$9\.99 a month in the iPhone app\.<\/p>/.test(pro) &&
-    (shown.replace(/<div class="bf-bar"[\s\S]*?<\/div>\s*<\/div>/, "").replace(/<p class="bf-deal"[\s\S]*?<\/p>/, "").match(/\$9\.99/g) || []).length === 2 &&
-    /fetch\("\/api\/charter"\)[\s\S]{0,120}if \(j && j\.ok && j\.free === false\) \$\("parentPrice"\)\.hidden = false;/.test(slps));
+  // The yellow box of what parents pay is gone (Travis, 25 Nov 2026: "remove the yellow box and the copy in it").
+  ok("no parents' price box under Sona Pro, and no /api/charter call for it",
+    !/parent-price|parentPrice/.test(slps) && !/\/api\/charter/.test(slps));
+  // THE SONA PRO LINES (Travis, 25 Nov 2026), in this order.
+  ok("the Sona Pro card's four lines: Sona Lite, unlimited client accounts, the SLP dashboard, and the Share & earn bonus",
+    /<li>Everything in Sona Lite<\/li>\s*<li>Unlimited accounts for clients<\/li>\s*<li>SLP dashboard to track at-home practice<\/li>\s*<li><b>Bonus:<\/b> Share &amp; earn <a href="#earn">\$8 a month<\/a> for each SLP you bring<\/li>/.test(pro));
   // SONA LITE, FOR THE CLINICIAN'S OWN SESSIONS (GHLEXIT1, Travis, 24 Nov
   // 2026: "$9.99/mo for just the kids app ... for the slp/slpa to use in
   // sessions", named so it is plainly not Pro). It is the Sona Premium Apple
@@ -502,7 +505,7 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   const APP_URL = (/export const APP_URL = "([^"]+)"/.exec(readFileSync(APP + "/lib/nurture.ts", "utf8")) || [])[1];
   ok("the Sona Lite card: the kids' app at $9.99 a month, its button the App Store listing, billed by Apple and named there, no trial promised and no plan button",
     app.includes("<h3>Sona Lite</h3>") && app.includes("<b>$9.99</b> a month") && !!APP_URL && app.includes('href="' + APP_URL + '"') &&
-    /Bought in the Sona app and billed by Apple; in the app it&rsquo;s called Sona Premium\./.test(app) && !/free|trial|data-plan/i.test(app) &&
+    app.includes('<p class="terms" id="appTerms">Cancel anytime.</p>') && !/free|trial|data-plan/i.test(app) &&
     /<li>Everything in Sona Lite<\/li>/.test(card("planPro")), app.slice(0, 300));
   // SHARE & EARN ON THE PAGE (GHLEXIT1; REFER1's rule, in the dashboard's
   // own words): three paying therapists earn more than Sona Pro costs.
@@ -543,10 +546,11 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
       bar.includes("Sona Pro is " + bfPrice + " a month for your first " + bfMonths + " months.") && pro.includes('id="bfDeal"') &&
       deal.includes(bfPrice + " a month for your first " + bfMonths + " months, then " + PRO.price + ". No free trial on this deal. Ends Sunday 11:59 PM Mountain.") &&
       /try \{ BF = Date\.now\(\) < BF_ENDS_AT; \}/.test(slps));
-    ok("…and its words are the checkout's: $9.99 for 3 months, then $19.99, charged today, no free trial",
-      /var BF_PRO_TERMS = "\$9\.99 a month for your first 3 months, then \$19\.99 a month\. Charged today: no free trial on this deal\. Cancel anytime: your families keep every game to the end of the month you paid for\.";/.test(slps) &&
-      /var BF_TERMS = "Black Friday: \$9\.99 a month for 3 months, then \$19\.99\. Charged today, no free trial\. Cancel anytime\.";/.test(slps) &&
-      /var BF_LABEL = "Get the Black Friday price";/.test(slps));
+    // Travis, 25 Nov 2026: $19.99 struck out with $9.99 beside it; the hero's terms line goes.
+    ok("…the Sona Pro price shows " + PRO.price + " struck out, then " + bfPrice + ", and the hero's terms line is hidden",
+      pro.includes('<s class="was" id="proWas" hidden>' + PRO.price + ' a month</s> <b>' + PRO.price + '</b> a month') &&
+      /\$\("fTerms"\)\.hidden = true; \$\("proWas"\)\.hidden = false; proPrice\.textContent = "\$9\.99";/.test(slps) &&
+      !/BF_TERMS|BF_PRO_TERMS/.test(slps) && /var BF_LABEL = "Get the Black Friday price";/.test(slps));
   }
   // 18 Nov 2026 (review): the pick is {plan, at}, written only once it is
   // acted on (a sent email, or a signed-in visitor), and counts for an hour.
@@ -578,7 +582,7 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   // phrase.
   ok("the page keeps the free version's phrase, and says 'unlimited' once, on the Sona Pro card",
     /daily practice and free games/i.test(flat) && !/free forever/i.test(flat) &&
-    (flat.match(/unlimited/gi) || []).length === 1 && /Unlimited families: everyone who joins through your link gets every game/.test(pro));
+    (flat.match(/unlimited/gi) || []).length === 1 && /Unlimited accounts for clients/.test(pro));
   const pricing = (shown.match(/<section class="wrap pricing"[\s\S]*?<\/section>/) || [""])[0];
   const outside = shown.replace(pricing, "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
   // The kid-side line names the plans on sale: "Sona Pro" in the markup, and
