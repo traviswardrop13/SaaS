@@ -71,11 +71,15 @@ function build(id) {
   const lines = [];
   lines.push(`Please make the pictures for a children's picture book called "${meta.title}". There are ${pics.length} pictures. Draw them ONE AT A TIME, in order: draw picture 1 now, then stop. Each time I type "next", draw the next picture. Don't ask me questions and don't explain: just draw. If I type "redo" and a note, draw that same picture again and fix what I say.`);
   lines.push("");
-  lines.push("I attached 4 pictures, in this order:");
-  lines.push("1. ECHO, our hero. Draw Echo exactly like this in every picture: the same shape, colors, feathers and face.");
-  lines.push("2. The STYLE SHEET. Match its look only. Never copy its rabbit, its places or its story, and never make a grid of panels like it.");
-  lines.push(`3. ECHO'S COTTAGE with Pelly the pelican, from an earlier book. Pictures 2 and 3 happen at this cottage: keep the cottage, its porch, its fence and Pelly looking exactly like this (Pelly's pose and what she holds are each picture's own).`);
-  lines.push("4. THE HELPER MAP, from an earlier book, with its old stars taken off. Picture 13 shows this map: draw it in exactly this look, its cream frame, four brass pins and soft painted little places.");
+  // Echo's picture is the one that must be attached (ChatGPT sees no
+  // picture from another chat, and without it Echo changes from story to
+  // story); the other three keep the pages matching the older stories
+  lines.push("I attached a picture of Echo, and maybe up to 3 more. Use each one I attached:");
+  lines.push("- ECHO, our hero. Draw Echo exactly like this in every picture: the same shape, colors, feathers and face.");
+  lines.push("- The STYLE SHEET (a grid of six little rabbit pictures), if attached. Match its look only. Never copy its rabbit, its places or its story, and never make a grid of panels like it.");
+  lines.push(`- ECHO'S COTTAGE with Pelly the pelican, from an earlier book, if attached. Pictures 2 and 3 happen at this cottage: keep the cottage, its porch, its fence and Pelly looking exactly like this (Pelly's pose and what she holds are each picture's own).`);
+  lines.push("- THE HELPER MAP, from an earlier book, if attached, with its old stars taken off. Picture 13 shows this map: draw it in exactly this look, its cream frame, four brass pins and soft painted little places.");
+  lines.push("Any of them not attached: draw it from its description below.");
   lines.push("");
   lines.push("THE STYLE OF EVERY PICTURE");
   lines.push(`Children's picture-book illustration in the exact look of the style sheet: soft 3D clay characters with a smooth, clean finish (no grain, no noise, no fuzzy felt, no paper texture), big friendly glossy eyes and small pink cheeks; simple, readable painted scenery with one clear focal point. Cheerful and calm for 3 to 8 year olds. Absolutely no text, letters, numbers or signs anywhere in any picture.`);
