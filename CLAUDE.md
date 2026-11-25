@@ -3196,6 +3196,15 @@ months** and **Mountain time**, then "but no free trial on the promo".
   there's no free trial"), carries exactly one 🎉 and one to three "!"**
   ("a little more excitement"). Resend sends them (GHLEXIT1). Every word is
   Travis's; `bfmailtest` plays it.
+  **Wednesday's email goes only by a press** (Travis, 25 Nov 2026: "all of
+  my SLP emails, I want to send them today's email too. not yet tho jsut
+  get it ready"): "🎉 Black Friday came early" (`BF_MANUAL_DAYS`, never the
+  cron's). /leads.html's "Black Friday email" card checks first
+  (`GET /api/founders/bf-send`: how many would get today's email, nothing
+  sent), then "Send it now to N" (POST, behind FOUNDER_KEY): the daily
+  run's own skips and once-a-day marks, so a second press or the next cron
+  never doubles it; it stops at about four minutes and says how many are
+  left, and pressing again carries on.
 - **for-slps.html's Black Friday mode is on wherever it is served (`/plans`,
   `/blackfriday/plans`, `/checkout`) until the end**, because every Sona Pro
   checkout until then is the deal: a navy bar with the time left, a line on
