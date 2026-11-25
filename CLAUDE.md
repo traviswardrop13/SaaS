@@ -3100,7 +3100,7 @@ MAIL1, the CRM webhook, STRIPEHOOK1's events, GHLPRO1's checkout).
 ## Black Friday 2026: Sona Pro $9.99 for 3 months, until Sunday 11:59 PM Mountain (BF1, 24 Nov 2026)
 Travis: "a fresh optin and website to use this week for black friday! with
 a countdown to sunday at 11:59 pm"; asked, he chose **50% off Sona Pro for 3
-months** (the 14-day trial first) and **Mountain time**.
+months** and **Mountain time**, then "but no free trial on the promo".
 - **lib/caseload:** `BF_ON` (the switch), `BF_ENDS_AT` (`Date.UTC(2026, 10,
   30, 6, 59, 0)`: Sunday 29 Nov 11:59 PM MST), `BF_OFF_CENTS` 1000 (so
   $19.99 is exactly `BF_PRICE` "$9.99"; half of it is not a price),
@@ -3112,27 +3112,31 @@ months** (the 14-day trial first) and **Mountain time**.
   from any page: `/api/slp/plan` gets the coupon from `ensureBfCoupon` (made
   in Stripe the first time: $10 off, `repeating` 3 months, `redeem_by` the
   end; a race to make it takes the other's), sets `discounts` (Stripe then
-  allows no promotion-code box), stamps `offer: bf-2026` on the
-  subscription, and its words say it: "No charge today. Your free trial
-  lasts 14 days; after that, $9.99 a month for your first 3 months (Black
-  Friday), then $19.99 a month until you cancel. ..." (charged-today
-  version for a spent trial). If Stripe will not give the coupon, the
-  checkout is the ordinary one, in its ordinary words. Never Sona Clinic.
-  `caseloadtest` plays it, the clock moved by hand.
+  allows no promotion-code box), gives **no free trial** (charged that day,
+  trial or not), stamps `offer: bf-2026` on the subscription, and its words
+  say it: "$9.99 a month for your first 3 months (Black Friday), then $19.99
+  a month. Charged today and every month until you cancel. Cancel anytime:
+  ...". If Stripe will not give the coupon, the checkout is the ordinary
+  one (the trial, for whoever still has it), in its ordinary words. Never
+  Sona Clinic. `caseloadtest` plays it, the clock moved by hand.
 - **`/blackfriday` is `public/bf.html`**: the opt-in in navy and butter, "Sona
-  Pro, half off.", "$9.99 a month for your first 3 months, after 14 days
-  free.", a days/hours/min/sec countdown, "Ends Sunday, November 29 at 11:59
-  PM Mountain.", one email box and Get Started (noindex; the app guard
-  first; the pixel's Lead only on `/api/lead`'s ok). It sends the visitor
-  to `/blackfriday/plans` with `sona.bf` in sessionStorage, or to `/plans`
-  after the end, when it says "Black Friday is over." and the ordinary
-  price.
-- **`/blackfriday/plans` is for-slps.html's Black Friday mode** (that path, or
-  `sona.bf` in the tab, and before the end): a navy bar with the time left,
-  a line on the Sona Pro card ("Applied automatically until Sunday 11:59 PM
-  Mountain."), and the trial's terms with the $9.99 months. At the end, on
-  an open page, the ordinary words come back. The ordinary `/plans` shows no
-  mode (its checkout still takes the $10 off this week).
+  Pro, half off.", "$9.99 a month for your first 3 months, then $19.99 a
+  month." (no trial promised), a days/hours/min/sec countdown, "Ends Sunday,
+  November 29 at 11:59 PM Mountain.", one email box and Get Started
+  (noindex; the app guard first; the pixel's Lead only on `/api/lead`'s
+  ok). It sends the visitor to `/blackfriday/plans`, or to `/plans` after
+  the end, when it says "Black Friday is over." and the ordinary price.
+- **for-slps.html's Black Friday mode is on wherever it is served (`/plans`,
+  `/blackfriday/plans`, `/checkout`) until the end**, because every Sona Pro
+  checkout until then is the deal: a navy bar with the time left, a line on
+  the Sona Pro card ("No free trial on this deal. Ends Sunday 11:59 PM
+  Mountain."), "Get the Black Friday price" on the buttons ("Get Sona Pro
+  for $9.99" on the card), the deal's charged-today terms, and "Open it to
+  get your Black Friday price." once the link is sent. At the end, on an
+  open page, the trial and its ordinary words come back. **Known, Travis's:**
+  the sign-in email still says "New to Sona? You'll start your free trial
+  first." and the dashboard's locked screen still offers the trial this
+  week; Stripe's page says the deal's terms.
 - One end in three places (lib/caseload, bf.html, for-slps.html) and every
   figure are pinned by `shiptest`; `landingtest` sets the page clock to
   play before, at and after the end; `telemetrytest` allows the pixel on
