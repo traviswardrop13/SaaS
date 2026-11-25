@@ -23,7 +23,7 @@
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Sona for speech therapists — send home practice they’ll play</title>
-  <meta name="description" content="Sona Pro for speech therapists, 14 days free. Play Sona games in your sessions, share the app with clients, and see who practiced at home. Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship." />
+  <meta name="description" content="Sona Pro for speech therapists, 14 days free. Play Sona games in your sessions, share the app with clients, and see who practiced at home. Built with Rachel, MS, CF-SLP." />
   <!-- THE CLINICIANS' PLANS PAGE (17 Nov 2026, the free packet left out on
        20 Nov 2026). Served at /plans and /checkout (next.config.js); since
        24 Nov 2026 (GHLEXIT1) / is the opt-in (start.html), whose email
@@ -136,7 +136,7 @@
     </div>
     <div class="trust">
       <img src="/assets/rachel-wardrop-profile.jpg" alt="" width="44" height="44">
-      <p>Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship.</p>
+      <p><b>Built with Rachel, MS, CF-SLP</b></p>
     </div>
   </div>
 
@@ -221,28 +221,22 @@
         <li>Set the sound you&rsquo;re working on, then play</li>
       </ul>
       <a class="btn ghost" id="appGo" href="https://apps.apple.com/us/app/sona-speech/id6785755867">Get it on the App Store</a>
-      <p class="terms" id="appTerms">Bought in the Sona app and billed by Apple; in the app it&rsquo;s called Sona Premium. No dashboard or family logins. Cancel anytime in your iPhone&rsquo;s settings.</p>
+      <p class="terms" id="appTerms">Cancel anytime.</p>
     </article>
     <article class="plan best" id="planPro">
       <p class="tag">Best for your caseload</p>
       <h3>Sona Pro</h3>
       <p class="for">For you and your whole caseload</p>
-      <p class="price"><b>$19.99</b> a month</p>
+      <p class="price"><s class="was" id="proWas" hidden>$19.99 a month</s> <b>$19.99</b> a month</p>
       <p class="bf-deal" id="bfDeal" hidden><b>Black Friday:</b> $9.99 a month for your first 3 months, then $19.99. No free trial on this deal. Ends Sunday 11:59 PM Mountain.</p>
       <ul>
         <li>Everything in Sona Lite</li>
-        <li>Your dashboard: session games, homework, and who practiced at home</li>
-        <li>Unlimited families: everyone who joins through your link gets every game</li>
-        <li>Share &amp; earn: <a href="#earn">$8 a month</a> for each SLP you bring</li>
+        <li>Unlimited accounts for clients</li>
+        <li>SLP dashboard to track at-home practice</li>
+        <li><b>Bonus:</b> Share &amp; earn <a href="#earn">$8 a month</a> for each SLP you bring</li>
       </ul>
-      <!-- WHAT PARENTS PAY (Travis asked, 17 Nov 2026), shown only while
-           /api/charter says families are paying (free: false): true today,
-           and false the day the family app goes free again. The figure is
-           App Store Connect's, which this repo cannot read: if that price
-           changes, this line changes with it (NATIVE.md). Exactly "$9.99". -->
-      <p class="parent-price" id="parentPrice" hidden>Families on your link get every game at no cost. Parents who buy Sona on their own pay $9.99 a month in the iPhone app.</p>
       <button class="btn" type="button" data-plan="pro" id="proGo">Try Sona Pro free</button>
-      <p class="terms" id="proTerms">14 days free, then $19.99 a month. Card required. Cancel during the trial and you pay nothing. One free trial per clinician.</p>
+      <p class="terms" id="proTerms">Cancel anytime.</p>
     </article>
   </div>
   <!-- Sona Clinic's card, inert in a <template> while CLINIC_ON is false: not
@@ -308,20 +302,8 @@
   <div class="txt">
     <p class="eyebrow">Meet Rachel</p>
     <h2 id="rachelH">Built with Rachel.</h2>
-    <p>Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship.</p>
+    <p>Rachel, MS, CF-SLP.</p>
     <p>The words a child is asked to say, how each sound is cued, and the age a sound opens at are her call.</p>
-  </div>
-</section>
-
-<section class="wrap before">
-  <div class="intro">
-    <h2>Good to know before you start.</h2>
-    <p>Sona is practice that listens. It supports speech therapy; it doesn't diagnose, evaluate or set goals.</p>
-  </div>
-  <div class="notes">
-    <div class="note"><b>Read it as practice volume</b><p>The check asks whether a sound has the acoustic shape of the target. That's narrower than your ear. Treat pass rate as a rough signal, not a score.</p></div>
-    <div class="note"><b>Tuned to General American English</b><p>Dialectal or bilingual speech, like AAVE or Spanish-influenced English, may be marked as misses. A speech therapist's judgment comes first.</p></div>
-    <div class="note"><b>Readiness comes first</b><p>Sona holds a sound back until a child is typically old enough for it: vocalic R, for example, isn't expected until about age 7. An SLP assigns what each child is ready for.</p></div>
   </div>
 </section>
 
@@ -466,8 +448,9 @@
     var BF = false, bfTimer = 0, bfWas = null;
     try { BF = Date.now() < BF_ENDS_AT; } catch (e) {}
     var BF_LABEL = "Get the Black Friday price";
-    var BF_TERMS = "Black Friday: $9.99 a month for 3 months, then $19.99. Charged today, no free trial. Cancel anytime.";
-    var BF_PRO_TERMS = "$9.99 a month for your first 3 months, then $19.99 a month. Charged today: no free trial on this deal. Cancel anytime: your families keep every game to the end of the month you paid for.";
+    // (Travis, 25 Nov 2026) The deal's words are the card's own line and the
+    // struck-out price; under the buttons, only "Cancel anytime."
+    var proPrice = document.querySelector("#planPro .price b");
     function bfTick() {
       var left = BF_ENDS_AT - Date.now();
       if (left <= 0) { bfEnd(); return; }
@@ -476,21 +459,22 @@
       $("bfLeft").textContent = "Ends in " + (d ? d + "d " : "") + two(Math.floor((s % 86400) / 3600)) + ":" + two(Math.floor((s % 3600) / 60)) + ":" + two(s % 60);
     }
     // The page's own words, kept to put back at the end.
-    function bfWords() { return { label: LABEL, f: $("fTerms").textContent, p: $("proTerms").textContent, pro: $("proGo").textContent, fin: $("finalGo").textContent }; }
+    function bfWords() { return { label: LABEL, f: $("fTerms").textContent, pro: $("proGo").textContent, fin: $("finalGo").textContent }; }
     function bfEnd() {
       if (bfTimer) { clearInterval(bfTimer); bfTimer = 0; }
       BF = false;
-      $("bfBar").hidden = true; $("bfDeal").hidden = true;
+      $("bfBar").hidden = true; $("bfDeal").hidden = true; $("proWas").hidden = true; $("fTerms").hidden = false;
+      proPrice.textContent = "$19.99";
       if (bfWas) {
         LABEL = bfWas.label; if (!$("fGo").disabled) $("fGo").textContent = LABEL;
-        $("fTerms").textContent = bfWas.f; $("proTerms").textContent = bfWas.p; $("proGo").textContent = bfWas.pro; $("finalGo").textContent = bfWas.fin;
+        $("fTerms").textContent = bfWas.f; $("proGo").textContent = bfWas.pro; $("finalGo").textContent = bfWas.fin;
         bfWas = null;
       }
     }
     if (BF) {
       bfWas = bfWords();
       LABEL = BF_LABEL; $("fGo").textContent = BF_LABEL; $("finalGo").textContent = BF_LABEL; $("proGo").textContent = "Get Sona Pro for $9.99";
-      $("fTerms").textContent = BF_TERMS; $("proTerms").textContent = BF_PRO_TERMS;
+      $("fTerms").hidden = true; $("proWas").hidden = false; proPrice.textContent = "$9.99";
       $("bfBar").hidden = false; $("bfDeal").hidden = false;
       bfTick(); bfTimer = setInterval(bfTick, 1000);
     }
@@ -580,15 +564,15 @@
       SIGNED_IN = true;
       $("fField").hidden = true;
       $("fEmail").required = false;
-      $("fNext").textContent = used || BF ? "You’re signed in. This opens checkout." : "You’re signed in. This opens your free trial.";
+      $("fNext").hidden = true;
       if (!used) return;
       var charged = price + " " + per + ", charged today. Cancel anytime.";
       // In Black Friday mode the deal's words stay (it has no trial either);
       // these are what its end puts back.
-      if (BF && bfWas) { bfWas = { label: "Get Sona Pro", f: charged, p: charged, pro: "Get Sona Pro", fin: "Get Sona Pro" }; return; }
+      if (BF && bfWas) { bfWas = { label: "Get Sona Pro", f: charged, pro: "Get Sona Pro", fin: "Get Sona Pro" }; return; }
       LABEL = "Get Sona Pro";
       $("fGo").textContent = LABEL; $("fTerms").textContent = charged;
-      $("proGo").textContent = LABEL; $("proTerms").textContent = charged;
+      $("proGo").textContent = LABEL;
       $("finalGo").textContent = LABEL;
     }
     try {
@@ -608,17 +592,6 @@
       if (kept && !$("fEmail").value && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(kept)) $("fEmail").value = kept;
     } catch (e) {}
 
-    /**
-     * WHAT PARENTS PAY, only while it is true. /api/charter says whether the
-     * family app is free right now; the line shows only on an explicit
-     * `free: false`, and stays hidden when the route answers free or not at
-     * all. The figure itself is App Store Connect's (see the comment on it).
-     */
-    try {
-      fetch("/api/charter").then(function (r) { return r.json(); }).then(function (j) {
-        if (j && j.ok && j.free === false) $("parentPrice").hidden = false;
-      }).catch(function () {});
-    } catch (e) {}
     function showDone(msg) {
       $("sentMsg").textContent = msg;
       $("signup").hidden = true;

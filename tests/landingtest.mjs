@@ -516,8 +516,9 @@ const keepTracks = () => Object.defineProperty(window, "sonaTrack", { configurab
   // Travis: "but no free trial on the promo": the deal's words, charged today.
   ok("/blackfriday/plans: the bar with the time left, the deal on the Sona Pro card, and its words everywhere: $9.99 for 3 months, charged today, no free trial", await page.evaluate(() =>
     !document.getElementById("bfBar").hidden && /^Ends in 3d \d\d:\d\d:\d\d$/.test(document.getElementById("bfLeft").textContent) && !document.getElementById("bfDeal").hidden &&
-    document.getElementById("fTerms").textContent === "Black Friday: $9.99 a month for 3 months, then $19.99. Charged today, no free trial. Cancel anytime." &&
-    /^\$9\.99 a month for your first 3 months, then \$19\.99 a month\. Charged today: no free trial on this deal\./.test(document.getElementById("proTerms").textContent) &&
+    document.getElementById("fTerms").hidden && !document.getElementById("proWas").hidden &&
+    document.querySelector("#planPro .price").innerText.replace(/\s+/g, " ").trim() === "$19.99 a month $9.99 a month" &&
+    document.getElementById("proTerms").textContent === "Cancel anytime." &&
     document.getElementById("fGo").textContent === "Get the Black Friday price" && document.getElementById("finalGo").textContent === "Get the Black Friday price" &&
     document.getElementById("proGo").textContent === "Get Sona Pro for $9.99" && !/free trial|days free/i.test(document.getElementById("pricing").querySelector("#planPro").innerText.replace(/no free trial/gi, ""))));
   ok("…with the email already in its box", await page.inputValue("#fEmail") === "bf@clinic.org");
@@ -534,8 +535,9 @@ const keepTracks = () => Object.defineProperty(window, "sonaTrack", { configurab
   const { context, page, errors } = await fresh({ path: "/blackfriday/plans", now: "2026-11-30T06:58:57Z" });
   const before = await page.evaluate(() => !document.getElementById("bfBar").hidden && !document.getElementById("bfDeal").hidden);
   const after = await settles(page, () => document.getElementById("bfBar").hidden && document.getElementById("bfDeal").hidden &&
-    document.getElementById("fTerms").textContent === "14 days free, then $19.99 a month. Cancel anytime." &&
-    document.getElementById("proTerms").textContent === "14 days free, then $19.99 a month. Card required. Cancel during the trial and you pay nothing. One free trial per clinician." &&
+    document.getElementById("fTerms").textContent === "14 days free, then $19.99 a month. Cancel anytime." && !document.getElementById("fTerms").hidden &&
+    document.getElementById("proWas").hidden && document.querySelector("#planPro .price b").textContent === "$19.99" &&
+    document.getElementById("proTerms").textContent === "Cancel anytime." &&
     document.getElementById("fGo").textContent === "Start your free trial" && document.getElementById("proGo").textContent === "Try Sona Pro free" &&
     document.getElementById("finalGo").textContent === "Start your free trial");
   ok("/blackfriday/plans three seconds before the end shows the deal, and at 11:59 PM goes back to the trial and its ordinary words", before && after);
@@ -621,7 +623,7 @@ const PLANS_CLINIC_ON = /var CLINIC_ON = true;/.test(PLANS_SRC);
     return document.getElementById("fGo").textContent.trim() === "Start your free trial" &&
       document.getElementById("finalGo").textContent.trim() === "Start your free trial" &&
       document.getElementById("fTerms").textContent.trim() === "14 days free, then $19.99 a month. Cancel anytime." &&
-      /Sona Pro/.test(t) && /\$19\.99\s*a month/.test(t) && /14 days free, then \$19\.99 a month\. Card required\./.test(t) &&
+      /Sona Pro/.test(t) && /\$19\.99\s*a month/.test(t) && document.getElementById("proTerms").textContent === "Cancel anytime." &&
       !/free dashboard|community/i.test(document.body.innerText);
   }));
   if (!PLANS_CLINIC_ON) {
@@ -636,8 +638,8 @@ const PLANS_CLINIC_ON = /var CLINIC_ON = true;/.test(PLANS_SRC);
     }));
     ok("…and the kid-side line names the one plan on sale", /every game while your Sona Pro plan is on\./.test(await page.evaluate(() => document.querySelector(".kidside").innerText)));
   }
-  // WHAT PARENTS PAY: hidden while /api/charter does not answer.
-  ok("the parents' price stays hidden while /api/charter does not answer", await page.locator("#parentPrice").isHidden());
+  // The parents' price box is gone (Travis, 25 Nov 2026).
+  ok("no parents' price box on the page", await page.locator("#parentPrice").count() === 0);
 
   // A plan button remembers the plan for the dashboard and brings the
   // visitor to the one form; it buys nothing here.
@@ -664,16 +666,6 @@ const PLANS_CLINIC_ON = /var CLINIC_ON = true;/.test(PLANS_SRC);
   ok("no page errors", errors.length === 0, errors);
   await context.close();
 }
-// ── the parents' price line, only where it is true (Travis, 17 Nov 2026) ──
-for (const [reply, shown, why] of [[{ ok: true, free: false, webSales: false }, true, "families pay (free: false)"], [{ ok: true, free: true }, false, "the family app is free"]]) {
-  charterReply = reply;
-  const { context, page } = await fresh({ path: "/plans" });
-  const vis = await settles(page, () => !document.getElementById("parentPrice").hidden);
-  ok("the parents' price line is " + (shown ? "shown" : "hidden") + " when " + why, vis === shown &&
-    (!shown || /Parents who buy Sona on their own pay \$9\.99 a month in the iPhone app\./.test(await page.textContent("#parentPrice"))));
-  await context.close();
-}
-charterReply = null;
 
 // ── Sona Premium and Sona Pro side by side, centred, on a laptop (GHLEXIT1) ──
 if (!PLANS_CLINIC_ON) {
@@ -722,13 +714,14 @@ for (const used of [false, true]) {
   posts = [];
   const st = used ? await settles(page, () => document.getElementById("fGo").textContent === "Get Sona Pro") : await settles(page, () => document.getElementById("fField").hidden);
   if (!used) await page.waitForTimeout(300);   // the plan's answer, which changes nothing here
-  const st2 = await page.evaluate(() => ({ field: document.getElementById("fField").hidden, next: document.getElementById("fNext").textContent, go: document.getElementById("fGo").textContent, terms: document.getElementById("fTerms").textContent,
+  const st2 = await page.evaluate(() => ({ field: document.getElementById("fField").hidden, nextHidden: document.getElementById("fNext").hidden, go: document.getElementById("fGo").textContent, terms: document.getElementById("fTerms").textContent,
     pro: document.getElementById("proGo").textContent, proTerms: document.getElementById("proTerms").textContent, fin: document.getElementById("finalGo").textContent }));
-  if (!used) ok("signed in, the trial still there: the form asks for no email and says \"You’re signed in. This opens your free trial.\"",
-    !!st && st2.field && st2.next === "You’re signed in. This opens your free trial." && st2.go === "Start your free trial" && st2.pro === "Try Sona Pro free", st2);
+  // No "You're signed in" line (Travis, 25 Nov 2026); the Pro card says only "Cancel anytime."
+  if (!used) ok("signed in, the trial still there: the form asks for no email and adds no line about it",
+    !!st && st2.field && st2.nextHidden && st2.go === "Start your free trial" && st2.pro === "Try Sona Pro free" && st2.proTerms === "Cancel anytime.", st2);
   else ok("signed in, the trial already had: \"Get Sona Pro\" on every button, \"$19.99 a month, charged today. Cancel anytime.\", never \"free\"",
-    st2.field && st2.next === "You’re signed in. This opens checkout." && st2.go === "Get Sona Pro" && st2.pro === "Get Sona Pro" && st2.fin === "Get Sona Pro" &&
-    st2.terms === "$19.99 a month, charged today. Cancel anytime." && st2.proTerms === st2.terms, st2);
+    st2.field && st2.nextHidden && st2.go === "Get Sona Pro" && st2.pro === "Get Sona Pro" && st2.fin === "Get Sona Pro" &&
+    st2.terms === "$19.99 a month, charged today. Cancel anytime." && st2.proTerms === "Cancel anytime.", st2);
   const nav = page.waitForURL((u) => u.pathname === "/slp.html", { timeout: 4000 }).then(() => true, () => false);
   await page.click(used ? "#finalGo" : "#fGo");
   ok(`…and ${used ? "the closing button" : "the form's button"} goes straight back to the dashboard with Sona Pro remembered, sending no email`,
