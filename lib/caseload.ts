@@ -139,6 +139,8 @@ export const BF_PRICE = "$9.99";
 export const BF_MONTHS = 3;
 /** The coupon's id in Stripe, made by ensureBfCoupon the first time a checkout needs it. */
 export const BF_COUPON = "sona-pro-bf-2026";
+/** The coupon's name, shown on Stripe's page. Stripe allows 40 characters at most. */
+export const BF_COUPON_NAME = "Black Friday: " + BF_PRICE + " for " + BF_MONTHS + " months";
 /** Stamped on the subscription (metadata.offer) of a Sona Pro bought with it. */
 export const BF_OFFER = "bf-2026";
 
@@ -171,7 +173,10 @@ export async function ensureBfCoupon(stripe: Stripe): Promise<string> {
   try {
     const made = await stripe.coupons.create({
       id: BF_COUPON,
-      name: "Black Friday: Sona Pro " + BF_PRICE + " for " + BF_MONTHS + " months",
+      // Stripe refuses a coupon name over 40 characters (25 Nov 2026: the
+      // first name, "Black Friday: Sona Pro $9.99 for 3 months", was 41, and
+      // every Black Friday checkout fell back to the ordinary trial).
+      name: BF_COUPON_NAME,
       amount_off: BF_OFF_CENTS,
       currency: "usd",
       duration: "repeating",

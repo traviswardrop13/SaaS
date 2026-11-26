@@ -195,6 +195,8 @@ const client = {
     create: async (p) => {
       S.calls.push(["coupons.create", p]); need();
       if (S.coupons.has(p.id)) throw stripeErr("Coupon already exists.", "resource_already_exists");
+      // as Stripe: a name over 40 characters is refused (25 Nov 2026)
+      if (p.name && p.name.length > 40) throw stripeErr("Invalid string: " + p.name + "; must be at most 40 characters", "parameter_invalid_string_too_long");
       const c = { object: "coupon", valid: true, ...p }; S.coupons.set(p.id, c); return c;
     },
   },
