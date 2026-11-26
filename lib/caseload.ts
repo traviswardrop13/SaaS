@@ -169,9 +169,13 @@ export async function ensureBfCoupon(stripe: Stripe): Promise<string> {
     if (!e || (e as { code?: string }).code !== "resource_missing") throw e;
   }
   try {
+    // Stripe refuses a coupon name over 40 characters, and then every
+    // checkout fell back to the trial (25 Nov 2026: "Black Friday: Sona Pro
+    // $9.99 for 3 months" is 41). This one is 32; caseloadtest's Stripe
+    // holds the limit.
     const made = await stripe.coupons.create({
       id: BF_COUPON,
-      name: "Black Friday: Sona Pro " + BF_PRICE + " for " + BF_MONTHS + " months",
+      name: "Black Friday: " + BF_PRICE + " for " + BF_MONTHS + " months",
       amount_off: BF_OFF_CENTS,
       currency: "usd",
       duration: "repeating",

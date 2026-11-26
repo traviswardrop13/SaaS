@@ -3162,6 +3162,12 @@ months** and **Mountain time**, then "but no free trial on the promo".
   ...". If Stripe will not give the coupon, the checkout is the ordinary
   one (the trial, for whoever still has it), in its ordinary words. Never
   Sona Clinic. `caseloadtest` plays it, the clock moved by hand.
+  **The coupon's name is at most 40 characters** (Stripe's limit). Until
+  the evening of 25 Nov 2026 it was 41 ("Black Friday: Sona Pro $9.99 for
+  3 months"), Stripe refused to make it, and every Black Friday checkout
+  showed "14 days free" and the code box instead (Travis: "i also dont want
+  it to show 14 days free"). It is "Black Friday: $9.99 for 3 months";
+  caseloadtest's fake Stripe refuses a longer name as Stripe does.
 - **`/blackfriday` is `public/bf.html`**: the opt-in in navy and butter,
   "Speech practice kids actually want to do." and under it "Send it home
   free to every family on your caseload." (Travis, 25 Nov 2026: in place of
