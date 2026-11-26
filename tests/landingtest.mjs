@@ -723,8 +723,16 @@ if (!PLANS_CLINIC_ON) {
     const t = strip.querySelector(".track"), kids = [].slice.call(t.children);
     return { slides: getComputedStyle(t).animationName === "lib-slide", whole: kids[kids.length / 2].offsetLeft - kids[0].offsetLeft === t.scrollWidth / 2,
       boxed: kids.every((k) => k.querySelector("img").offsetWidth === 112),
-      dir: getComputedStyle(t).animationDirection === (strip.classList.contains("rev") ? "reverse" : "normal") };
+      dir: getComputedStyle(t).animationDirection === (strip.classList.contains("rev") ? "reverse" : "normal"),
+      // Pixels a second, not seconds a loop: the two strips are different
+      // lengths, so only the speed says which is slower.
+      label: strip.getAttribute("aria-label"), pace: t.scrollWidth / 2 / parseFloat(getComputedStyle(t).animationDuration) };
   }));
+  // The games slide at half the books' pace (Travis, 25 Nov 2026: "can you
+  // have the games going across the screeen slower"): 18 px a second, 36.
+  const paceOf = (label) => (lib.find((s) => s.label === label) || {}).pace;
+  ok("/plans: the games slide at half the books' pace, 18 px a second to their 36",
+    Math.abs(paceOf("Sona's games") - 18) < 1 && Math.abs(paceOf("Sona's picture books") - 36) < 1, lib.map((s) => [s.label, s.pace]));
   // Light and dark take turns (Travis, 25 Nov 2026: "put the what Sona can
   // do part ... above the section that has the carousel ... the every other
   // vibe"): the hero, What you can do, the games and books, the plans.
