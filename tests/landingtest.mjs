@@ -520,6 +520,12 @@ const keepTracks = () => Object.defineProperty(window, "sonaTrack", { configurab
   ok("…the headline, no price, Get Started, and no plans on the page", await page.evaluate(() =>
     /Speech practice kids actually want to do\./.test(document.body.innerText) && !/half off/i.test(document.body.innerText) && !/\$\d/.test(document.body.innerText) && /Ends Sunday, November 29 at 11:59 PM Mountain\./.test(document.body.innerText) &&
     document.getElementById("oGo").textContent.trim() === "Get Started" && !document.getElementById("pricing")));
+  // Travis, 25 Nov 2026: "Let's add the testimonial to the opt-in page too".
+  ok("…and Lindi's review, under Get Started, with the button still on the first screen", await page.evaluate(() => {
+    const q = document.getElementById("heroQuote"), b = document.getElementById("oGo").getBoundingClientRect();
+    return !!q && q.offsetHeight > 0 && /^Makes practicing fun!/.test(q.querySelector(".qt").textContent) &&
+      q.getBoundingClientRect().top >= b.bottom && b.bottom <= window.innerHeight;
+  }));
   posts = []; leadReply = { ok: true, captured: true };
   await page.fill("#oEmail", "bf@clinic.org");
   const went = page.waitForURL((u) => u.pathname === "/blackfriday/plans", { timeout: 5000 }).then(() => true, () => false);
