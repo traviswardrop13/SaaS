@@ -188,6 +188,8 @@ const client = {
     retrieve: async (id) => { S.calls.push(["coupons.retrieve", id]); need(); const c = S.coupons.get(id); if (!c) throw stripeErr("No such coupon: '" + id + "'", "resource_missing"); return c; },
     create: async (p) => {
       S.calls.push(["coupons.create", p]); need();
+      // Stripe's own limit (25 Nov 2026: a 41-character name sent every Black Friday checkout to the trial)
+      if (p.name && p.name.length > 40) throw stripeErr("Invalid string: " + p.name + "; must be at most 40 characters", "parameter_invalid_string_too_long");
       if (S.coupons.has(p.id)) throw stripeErr("Coupon already exists.", "resource_already_exists");
       const c = { object: "coupon", valid: true, ...p }; S.coupons.set(p.id, c); return c;
     },
