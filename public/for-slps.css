@@ -376,6 +376,8 @@ a.btn { text-decoration: none; }
 /* /plans in its Black Friday mode wears the same band (25 Nov 2026): its
    Rachel line reads light on the navy; Lindi's card keeps its mint. */
 .bf-band .trust { color: #f3ecd9; }
+/* the cream box a buyer sees back from Stripe keeps its dark words (#324) */
+.bf-band .sent { color: var(--ink); }
 
 @media (max-width: 850px) {
   .plans:has(> .plan:nth-child(3)) { grid-template-columns: minmax(0, 1fr); }

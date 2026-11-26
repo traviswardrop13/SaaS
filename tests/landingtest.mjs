@@ -897,6 +897,20 @@ const sentSays = (page) => page.evaluate(() => ({
   await context.close();
 }
 {
+  // The same return during Black Friday, when the box sits on the navy band
+  // (Greptile on #324): its heading must stay dark on the box's cream.
+  posts = []; doneQueue = []; doneReply = { ok: true, activated: true, sent: true };
+  const { context, page, errors } = await fresh({ path: "/blackfriday/plans", query: "&paid=cs_test_a1b2c3d4e5f6g7", init: quickRetry, now: "2026-11-26T19:00:00Z" });
+  await settles(page, () => /You're in!/.test(document.getElementById("sentT").textContent));
+  const ink = await page.evaluate(() => {
+    const lum = (c) => { const [r, g, b] = c.match(/\d+/g).map(Number); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+    return { band: document.querySelector(".hero-band").classList.contains("bf-band"), t: lum(getComputedStyle(document.getElementById("sentT")).color), box: lum(getComputedStyle(document.getElementById("sent")).backgroundColor) };
+  });
+  ok("…and during Black Friday, on the navy band, \"You're in!\" is dark on its cream box", ink.band && ink.box > 200 && ink.t < 90, ink);
+  ok("…no page errors", errors.length === 0, errors);
+  await context.close();
+}
+{
   // the email went only on the second ask (Stripe's webhook was sending it)
   posts = []; doneQueue = [{ ok: true, activated: true, sent: false, retry: true, trial: true }]; doneReply = { ok: true, activated: true, sent: true, trial: true };
   const { context, page } = await fresh({ path: "/plans", query: "&paid=cs_test_a1b2c3d4e5f6g7", init: quickRetry });
