@@ -557,6 +557,7 @@ delete process.env.KIT_API_KEY;
     "@/lib/rateLimit": { rateLimit: async () => null },
     "@/lib/contacts": C,
     "@/lib/launch": { APP_READY: true, sendWelcomeEmail: async () => false },
+    "@/lib/bfmail": { sendBfEmail: async () => false },
     "@/lib/mail": { mailConfigured: () => true },
     "@/lib/nurture": { enroll: async () => false, inAppSource: () => false, stopSeries: async () => {} },
   };
@@ -631,8 +632,14 @@ delete process.env.KIT_API_KEY;
   const fb = read("app/api/feedback/route.ts");
   ok("/api/feedback never falls back to the CRM's webhook (a parent's note may name their child)",
     !/process\.env\.LEAD_WEBHOOK_URL/.test(fb) && /process\.env\.FEEDBACK_WEBHOOK_URL \|\|\s+process\.env\.PILOT_WEBHOOK_URL;/.test(fb));
-  ok("the privacy policy names GoHighLevel and what it is given, never anything about a child",
-    /<strong>Contact list<\/strong> — GoHighLevel[^<]*never anything about a child/.test(read("public/privacy.html")));
+  // GHLEXIT1 (24 Nov 2026, Travis: "I want to get rid of go high level"):
+  // LEAD_WEBHOOK_URL is off, so the policy names no contact list there, and
+  // Resend delivers what GoHighLevel delivered from 16 to 24 Nov 2026.
+  const privacy = read("public/privacy.html");
+  ok("the privacy policy names no GoHighLevel contact list, and Resend delivers Sona's emails",
+    !/GoHighLevel|HighLevel|<strong>Contact list<\/strong>/.test(privacy) &&
+    /<strong>Email delivery<\/strong> — Resend delivers a clinician&rsquo;s sign-in link/.test(privacy) &&
+    /<strong>Email list<\/strong> — Resend keeps Sona&rsquo;s email list[^<]*never anything about a child/.test(privacy));
 }
 
 // ── the wiring ──

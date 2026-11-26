@@ -6,10 +6,12 @@ import { contactsConfigured, planWord, upsertContact, type ListResult } from "@/
 import { APP_READY, sendWelcomeEmail } from "@/lib/launch";
 import { enroll, inAppSource, stopSeries } from "@/lib/nurture";
 import { mailConfigured } from "@/lib/mail";
+import { sendBfEmail } from "@/lib/bfmail";
 
 /**
  * THE ONE PLACE A GROWN-UP'S EMAIL GOES: the SLP sign-up (via the auth route's
- * tellCrm), the app's setup (a clinician's account email, a parent's
+ * tellCrm),
+ * the app's setup (a clinician's account email, a parent's
  * optional email step, before the price since 13 Oct 2026), a purchase's
  * plan post (sona.js _tellPlan) and the Speech Check.
  *
@@ -325,6 +327,14 @@ export async function POST(req: NextRequest) {
     } catch {
       // never fail the visitor on the welcome
     }
+  }
+  // THE BLACK FRIDAY EMAIL (BFMAIL1, lib/bfmail.ts, 25 Nov 2026): a speech
+  // therapist's email from either opt-in, while the deal is on, gets one
+  // email about it from Rachel, at once. Never fails the visitor.
+  // Not for an email typed on the way into Stripe (BUYNOW1): a buyer is never
+  // sent the deal they are paying for that minute.
+  if (lead.role === "slp" && lead.source !== "plans-checkout" && kvConfigured()) {
+    try { await sendBfEmail(email, kvCmd, fetch); } catch { /* never fail the visitor */ }
   }
   // A PARENT WHO STARTED SONA PREMIUM gets no more of the welcome series
   // (Travis, 16 Oct 2026): the day-2 email sells the free days they already

@@ -87,15 +87,8 @@ struct HomeView: View {
                 .foregroundStyle(SonaPalette.teal)
             }
 
-            quickLink(.games, title: "Pick a game", symbol: "gamecontroller.fill", accent: SonaPalette.mint,
-                      identifier: "home-games")
-
-            if typeSize.isAccessibilitySize {
-                VStack(spacing: 12) { quickLinks }
-            } else {
-                HStack(spacing: 12) { quickLinks }
-            }
-
+            // Today's story leads, as on the approved web Home; the two painted
+            // doors sit under it. Practice keeps its tab, so it has no bar here.
             if let home {
                 if let card = home.card {
                     adventureCard(card.title, artwork: "echo-welcome", open: !card.locked, card: card)
@@ -104,6 +97,12 @@ struct HomeView: View {
                 adventureCard(dailyStory.title, artwork: "daily-\(dailyStory.id)", open: storyAccess)
             } else if let dailyGame {
                 adventureCard(dailyGame.title, artwork: dailyGame.cover, open: true)
+            }
+
+            if typeSize.isAccessibilitySize {
+                VStack(spacing: 12) { doors }
+            } else {
+                HStack(alignment: .top, spacing: 12) { doors }
             }
         }
         .padding(.horizontal, 20)
@@ -177,7 +176,7 @@ struct HomeView: View {
                     if let card { NativeHomeArtwork(paths: card.imagePaths) }
                     else { Image(artwork).resizable().scaledToFill() }
                 }
-                .frame(height: 188).frame(maxWidth: .infinity).clipped()
+                .frame(height: 236).frame(maxWidth: .infinity).clipped()
                 .overlay(done ? Color.black.opacity(0.5) : Color.clear)
                 .allowsHitTesting(false).accessibilityHidden(true)
 
@@ -201,8 +200,10 @@ struct HomeView: View {
                     }
                     Spacer(minLength: 6)
                     Image(systemName: done ? "lock.fill" : open ? "play.fill" : "lock.fill")
-                        .font(.system(size: 22, weight: .bold)).frame(width: 50, height: 50)
-                        .background(.white.opacity(0.16), in: Circle()).accessibilityHidden(true)
+                        .font(.system(size: 24, weight: .bold)).frame(width: 60, height: 60)
+                        .foregroundStyle(done || !open ? Color.white : SonaPalette.teal)
+                        .background(done || !open ? Color.white.opacity(0.16) : Color.white, in: Circle())
+                        .accessibilityHidden(true)
                 }
                 .padding(16).foregroundStyle(.white).background(SonaPalette.teal)
             }
@@ -212,42 +213,39 @@ struct HomeView: View {
     }
 
     @ViewBuilder
-    private var quickLinks: some View {
-        quickLink(.books, title: "Books", symbol: "book.fill", accent: SonaPalette.lavender, identifier: "home-books")
-        quickLink(.practice, title: "Practice", symbol: "waveform", accent: SonaPalette.yellow, identifier: "home-practice")
+    private var doors: some View {
+        door(.games, title: "Games", artwork: "home-arcade", accent: SonaPalette.lavender, tag: nil, identifier: "home-games")
+        door(.books, title: "Books", artwork: "home-books", accent: SonaPalette.yellow, tag: home?.booksTag, identifier: "home-books")
     }
 
-    private func quickLink(_ destination: Destination, title: String, symbol: String, accent: Color,
-                           identifier: String) -> some View {
+    /// A painted door: the picture on top, one big word under it. A child who
+    /// cannot read still knows which is which.
+    private func door(_ destination: Destination, title: String, artwork: String, accent: Color, tag: String?,
+                      identifier: String) -> some View {
         Button {
             onOpen(destination)
         } label: {
-            HStack(spacing: 9) {
-                Image(systemName: symbol)
-                    .font(.body.weight(.bold))
+            VStack(alignment: .leading, spacing: 0) {
+                Image(artwork).resizable().scaledToFill()
+                    .frame(height: 92).frame(maxWidth: .infinity).clipped()
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
-                        .font(.system(destination == .games ? .title2 : .headline, design: .rounded).weight(.heavy))
-                        .fixedSize(horizontal: false, vertical: true)
-                    if destination == .books, let tag = home?.booksTag {
+                        .font(.system(.title3, design: .rounded).weight(.heavy))
+                    if let tag {
                         Text(tag)
                             .font(.caption.weight(.semibold))
                             .fixedSize(horizontal: false, vertical: true)
                             .accessibilityIdentifier("home-books-tag")
                     }
                 }
-                Spacer(minLength: 0)
-                if destination == .games {
-                    Image(systemName: "chevron.right")
-                        .font(.body.weight(.bold))
-                        .accessibilityHidden(true)
-                }
+                .padding(.horizontal, 13).padding(.vertical, 9)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .padding(.horizontal, 13)
-            .padding(.vertical, 8)
-            .frame(minHeight: destination == .games ? 76 : 58)
-            .background(accent, in: RoundedRectangle(cornerRadius: 19))
+            .background(accent)
+            .clipShape(RoundedRectangle(cornerRadius: 22))
+            .contentShape(RoundedRectangle(cornerRadius: 22))
+            .shadow(color: .black.opacity(0.10), radius: 6, y: 3)
         }
         .buttonStyle(SonaPressStyle())
         .accessibilityIdentifier(identifier)

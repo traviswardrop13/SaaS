@@ -41,8 +41,8 @@ function loadTs(file, cache = new Map()) {
 const KV_URL = "https://kv.stripehook.test.invalid";
 const HOOK = "https://services.leadconnectorhq.com/hooks/TEST/webhook-trigger/TEST";
 const K = new Map();
-let kvDown = false, crmStatus = 200;
-const SENT = [];
+let kvDown = false, crmStatus = 200, stripeDown = false, CUST_EMAIL = "New@Clinic.org", mailStatus = 200;
+const SENT = [], STRIPE = [], MAILS = [];
 globalThis.fetch = async (url, init = {}) => {
   const u = String(url);
   if (u === KV_URL) {
@@ -52,8 +52,22 @@ globalThis.fetch = async (url, init = {}) => {
     if (op === "SET") { if (a.includes("NX") && K.has(a[0])) result = null; else { K.set(a[0], String(a[1])); result = "OK"; } }
     else if (op === "DEL") result = K.delete(a[0]) ? 1 : 0;
     else if (op === "GET") result = K.get(a[0]) ?? null;
+    else if (op === "EXPIRE") result = 1;
+    else if (op === "EVAL" && String(a[0]).startsWith("-- slpbuymail:release\n")) result = K.get(a[2]) === a[3] ? (K.delete(a[2]) ? 1 : 0) : 0;
     else throw new Error("fake kv does not speak " + op);
     return Response.json({ result });
+  }
+  if (u.startsWith("https://api.stripe.com/")) {
+    const pathOnly = new URL(u).pathname;
+    STRIPE.push({ method: init.method || "GET", path: pathOnly, body: String(init.body || "") });
+    if (stripeDown) return new Response(JSON.stringify({ error: { message: "down" } }), { status: 500, headers: { "content-type": "application/json" } });
+    if (pathOnly.startsWith("/v1/customers/")) return Response.json({ id: pathOnly.split("/").pop(), object: "customer", email: CUST_EMAIL });
+    if (pathOnly.startsWith("/v1/subscriptions/")) return Response.json({ id: pathOnly.split("/").pop(), object: "subscription", metadata: {} });
+    throw new Error("fake stripe does not speak " + pathOnly);
+  }
+  if (u === "https://api.resend.com/emails") {
+    MAILS.push(JSON.parse(init.body));
+    return new Response(mailStatus === 200 ? JSON.stringify({ id: "em_" + MAILS.length }) : "{}", { status: mailStatus });
   }
   if (u.startsWith(HOOK)) {
     SENT.push({ url: u, body: JSON.parse(init.body) });
@@ -63,11 +77,13 @@ globalThis.fetch = async (url, init = {}) => {
 };
 
 const SECRET = "whsec_test_0123456789abcdef";
-Object.assign(process.env, { KV_REST_API_URL: KV_URL, KV_REST_API_TOKEN: "t", LEAD_WEBHOOK_URL: HOOK, STRIPE_WEBHOOK_SECRET: SECRET });
+Object.assign(process.env, { KV_REST_API_URL: KV_URL, KV_REST_API_TOKEN: "t", LEAD_WEBHOOK_URL: HOOK, STRIPE_WEBHOOK_SECRET: SECRET,
+  STRIPE_SECRET_KEY: "sk_test_fake", STRIPE_PRO_PRODUCT_IDS: "prod_GHLPRO, price_other" });
+for (const k of ["RESEND_API_KEY", "GHL_API_TOKEN", "GHL_LOCATION_ID"]) delete process.env[k];
 delete process.env.STRIPE_WEBHOOK_SECRET_PREV;
 
 const route = loadTs(path.join(REPO, "app/api/stripe/webhook/route.ts"));
-const { proEventFor } = loadTs(path.join(REPO, "lib/stripeHook.ts"));
+const { proEventFor, proProductIds, untaggedProSub } = loadTs(path.join(REPO, "lib/stripeHook.ts"));
 const stripe = new Stripe("sk_test_unused");
 
 let n = 0;
@@ -83,7 +99,7 @@ async function post(e, secret = SECRET) {
   const r = await route.POST(req);
   return { status: r.status, j: await r.json() };
 }
-const reset = () => { K.clear(); SENT.length = 0; kvDown = false; crmStatus = 200; };
+const reset = () => { K.clear(); SENT.length = 0; STRIPE.length = 0; MAILS.length = 0; kvDown = false; crmStatus = 200; stripeDown = false; CUST_EMAIL = "New@Clinic.org"; mailStatus = 200; };
 
 // ── the meaning of each event (no network) ──
 {
@@ -170,6 +186,109 @@ reset();
 
   const g = await (await route.GET()).json();
   ok("the health check says only yes or no", g.secret === true && g.crm === true && !JSON.stringify(g).includes("whsec"), g);
+}
+
+// ── GHLPRO1: Sona Pro bought on the GoHighLevel checkout ──
+{
+  const ids = proProductIds();
+  ok("the product list keeps only Stripe ids", ids.has("prod_GHLPRO") && ids.has("price_other") && ids.size === 2 && proProductIds("junk, ,prod_x y").size === 0);
+  const ghlSub = (over = {}) => ({ id: "sub_ghl1", object: "subscription", status: "trialing", customer: "cus_1", cancel_at_period_end: false, cancel_at: null,
+    metadata: {}, items: { data: [{ price: { id: "price_ghl", product: "prod_GHLPRO" } }] }, ...over });
+  ok("a subscription for the listed product is Sona Pro", untaggedProSub(ghlSub(), ids));
+  ok("…matched by price id too", untaggedProSub(ghlSub({ items: { data: [{ price: { id: "price_other", product: "prod_x" } }] } }), ids));
+  ok("another product is not", !untaggedProSub(ghlSub({ items: { data: [{ price: { id: "price_x", product: "prod_family" } }] } }), ids));
+  ok("one already stamped is never claimed again", !untaggedProSub(ghlSub({ metadata: { plan: "family" } }), ids));
+  ok("with no list, nothing is claimed", !untaggedProSub(ghlSub(), proProductIds("")));
+
+  reset();
+  const r = await post(evt("customer.subscription.created", ghlSub()));
+  ok("a GoHighLevel start is claimed and sent", r.status === 200 && r.j.sent === true, r);
+  const upd = STRIPE.find((x) => x.method === "POST" && x.path === "/v1/subscriptions/sub_ghl1");
+  ok("…the subscription is stamped plan slp-pro, the customer's own email", !!upd && upd.body.includes("metadata[plan]=slp-pro") && upd.body.includes("metadata[slp]=new%40clinic.org"), STRIPE);
+  ok("…GoHighLevel hears a Sona Pro trial for that email", SENT.length === 1 && SENT[0].body.email === "new@clinic.org" && SENT[0].body.event === "started" && SENT[0].body.plan === "trial", SENT);
+  ok("…a sign-in link is made for that email, once", K.get("slpghlmail:sub_ghl1") === "1" && [...K.entries()].some(([k, v]) => k.startsWith("slptok:") && v === "new@clinic.org"));
+  ok("…and any cached 'no plan' for them is dropped", !K.has("slpplan-pro:new@clinic.org"));
+  const toks = [...K.keys()].filter((k) => k.startsWith("slptok:")).length;
+  await post(evt("customer.subscription.created", ghlSub()));
+  ok("a second delivery sends no second sign-in link", [...K.keys()].filter((k) => k.startsWith("slptok:")).length === toks);
+
+  reset(); stripeDown = true;
+  const r2 = await post(evt("customer.subscription.created", ghlSub()));
+  ok("Stripe not answering the claim is a 503, nothing sent or marked", r2.status === 503 && SENT.length === 0 && !K.has("slpghlmail:sub_ghl1"), r2);
+
+  reset(); CUST_EMAIL = "";
+  const r3 = await post(evt("customer.subscription.created", ghlSub()));
+  ok("a customer with no email is left alone", r3.j.ignored === "not-sona-pro" && !STRIPE.some((x) => x.method === "POST") && SENT.length === 0, r3);
+
+  reset();
+  await post(evt("customer.subscription.created", ghlSub({ items: { data: [{ price: { id: "price_x", product: "prod_family" } }] } })));
+  ok("another product's subscription is never touched", STRIPE.length === 0 && SENT.length === 0);
+}
+
+// ── BUYNOW1: a Sona Pro bought on /plans, whose buyer never came back ──
+{
+  process.env.RESEND_API_KEY = "re_test_fake";
+  const { readFreeDashboardSignup } = loadTs(path.join(REPO, "lib/slpAuth.ts"));
+  const plansSub = (over = {}) => proSub({ id: "sub_plans1", status: "active", metadata: { plan: "slp-pro", slp: "Buyer@Clinic.org", from: "plans", ref: "abcd2345" }, ...over });
+  const toks = () => [...K.entries()].filter(([k]) => k.startsWith("slptok:"));
+
+  reset();
+  K.set("slpplan-pro:buyer@clinic.org", JSON.stringify({ none: true }));
+  let r = await post(evt("customer.subscription.created", plansSub()));
+  const pend = toks().length === 1 ? readFreeDashboardSignup(String(toks()[0][1])) : null;
+  ok("a /plans start emails its sign-in link from the webhook, once, marked sent for the subscription",
+    r.status === 200 && MAILS.length === 1 && JSON.stringify(MAILS[0].to) === JSON.stringify(["buyer@clinic.org"]) && K.get("slpbuymail:sub_plans1") === "sent", [r, MAILS.length]);
+  ok("…its link is the sign-up door's, carrying the referral code", !!pend && pend.email === "buyer@clinic.org" && pend.ref === "abcd2345" && pend.source === "plans-checkout", pend);
+  ok("…any cached 'no plan' is dropped, and GoHighLevel still hears the start", !K.has("slpplan-pro:buyer@clinic.org") && SENT.length === 1 && SENT[0].body.event === "started");
+  await post(evt("customer.subscription.created", plansSub()));
+  await post(evt("customer.subscription.updated", plansSub(), { status: "incomplete" }));
+  ok("a second delivery, or the return page having sent it, sends no second email", MAILS.length === 1 && toks().length === 1);
+
+  reset();
+  await post(evt("customer.subscription.updated", plansSub(), { items: {} }));
+  await post(evt("customer.subscription.updated", plansSub({ status: "past_due" }), { status: "active" }));
+  await post(evt("customer.subscription.created", plansSub({ status: "incomplete" })));
+  ok("a renewal, a payment problem or a plan not on yet sends nothing", MAILS.length === 0 && !K.has("slpbuymail:sub_plans1"));
+  r = await post(evt("customer.subscription.updated", plansSub(), { status: "incomplete" }));
+  ok("…and a card that needed a second step sends it once the plan comes on", r.status === 200 && MAILS.length === 1 && K.get("slpbuymail:sub_plans1") === "sent");
+
+  reset();
+  await post(evt("customer.subscription.created", proSub({ id: "sub_dash1", status: "active", metadata: { plan: "slp-pro", slp: "dash@clinic.org" } })));
+  ok("a dashboard checkout (signed in) is never emailed from here", MAILS.length === 0 && !K.has("slpbuymail:sub_dash1"));
+
+  reset();
+  r = await post(evt("customer.subscription.updated", proSub({ id: "sub_old317", status: "active", metadata: { plan: "slp-pro", slp: "old@clinic.org", source: "plans" } }), { status: "incomplete" }));
+  ok("a checkout from #317's first cut (source: plans) that comes on is emailed the same way",
+    r.status === 200 && MAILS.length === 1 && JSON.stringify(MAILS[0].to) === JSON.stringify(["old@clinic.org"]) && K.get("slpbuymail:sub_old317") === "sent");
+
+  reset(); mailStatus = 500;
+  r = await post(evt("customer.subscription.created", plansSub()));
+  ok("an email that did not go is a 503 (Stripe tries again), the mark given back, GoHighLevel not told yet",
+    r.status === 503 && !K.has("slpbuymail:sub_plans1") && SENT.length === 0, r);
+  mailStatus = 200;
+  r = await post(evt("customer.subscription.created", plansSub()));
+  ok("…and Stripe's retry sends it", r.status === 200 && MAILS.length === 2 && K.get("slpbuymail:sub_plans1") === "sent" && SENT.length === 1, [r, MAILS.length]);
+
+  reset(); K.set("slpbuymail:sub_plans1", "held-by-the-return-page");
+  r = await post(evt("customer.subscription.created", plansSub()));
+  ok("while the return page is sending it, the webhook sends nothing and answers 503, so Stripe asks again",
+    r.status === 503 && MAILS.length === 0 && K.get("slpbuymail:sub_plans1") === "held-by-the-return-page", r);
+
+  // NO EMAIL ON /plans (26 Nov 2026): the checkout carried none, so the
+  // owner is the Stripe customer's email, stamped before anything else.
+  reset(); K.set("slpplan-pro:new@clinic.org", JSON.stringify({ none: true }));
+  const noOwner = proSub({ id: "sub_noemail1", status: "trialing", customer: "cus_ne1", metadata: { plan: "slp-pro", from: "plans" } });
+  r = await post(evt("customer.subscription.created", noOwner));
+  const stamp = STRIPE.find((x) => x.method === "POST" && x.path === "/v1/subscriptions/sub_noemail1");
+  ok("a /plans start with no email takes the Stripe customer's email as its owner, stamps it, and emails its sign-in link there",
+    r.status === 200 && !!stamp && stamp.body.includes("metadata[slp]=new%40clinic.org") && !stamp.body.includes("metadata[plan]") &&
+    MAILS.length === 1 && JSON.stringify(MAILS[0].to) === JSON.stringify(["new@clinic.org"]) && K.get("slpbuymail:sub_noemail1") === "sent" &&
+    !K.has("slpplan-pro:new@clinic.org"), [r, stamp, MAILS.length]);
+  reset(); stripeDown = true;
+  r = await post(evt("customer.subscription.created", proSub({ id: "sub_noemail2", status: "trialing", customer: "cus_ne2", metadata: { plan: "slp-pro", from: "plans" } })));
+  ok("…and Stripe not answering is a 503, nothing sent", r.status === 503 && MAILS.length === 0 && !K.has("slpbuymail:sub_noemail2"), r);
+  stripeDown = false;
+  delete process.env.RESEND_API_KEY;
 }
 
 // ── the source never logs an address or keeps money ──

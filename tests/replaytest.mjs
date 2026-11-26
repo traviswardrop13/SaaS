@@ -496,7 +496,8 @@ try {
       await w.page.waitForFunction(() => window.posthog && window.posthog.__loaded).catch(() => {});
       if (ready === "offer") await w.page.locator("body.offer").waitFor();
       if (ready === "clinician") {
-        await w.page.locator("#fEmail").fill("doctor.test@example.com");
+        // /plans has no email box since 26 Nov 2026: type where there is one.
+        if (await w.page.locator("#fEmail").count()) await w.page.locator("#fEmail").fill("doctor.test@example.com");
       }
       if (ready === "slp" || ready === "local") {
         await w.page.waitForFunction(() => window.Sona && document.getElementById("nextBtn"));

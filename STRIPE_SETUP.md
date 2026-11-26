@@ -29,6 +29,7 @@ Project **sona → Settings → Environment Variables** (Production **and** Prev
 | `NEXT_PUBLIC_SITE_URL` | your site URL, e.g. `https://getsona.com` | optional* |
 | `STRIPE_PRICE_ID` | a Price ID, if you'd rather manage the price in Stripe | optional |
 | `STRIPE_PRICE_ID_SLP_PRO` | a **monthly $19.99** Price for "Sona Pro" (below) | optional |
+| `STRIPE_PRICE_ID_SLP_CLINIC` | a **monthly $99** Price for "Sona Clinic" (below; hidden from sale since 18 Nov 2026, so not needed yet) | optional |
 | `STRIPE_PRICE_ID_SLP_SELF` | a yearly **$59.99** Price for "Sona Premium for you" (retired from sale 12 Nov 2026; no longer read) | — |
 | `STRIPE_PRICE_ID_SLP_CASELOAD_ADDON` | a yearly **$59.99** Price for "Sona Premium for your caseload" (retired from sale 12 Nov 2026; no longer read) | — |
 | `STRIPE_PORTAL_CONFIG_CASELOAD` | a billing-portal configuration id (`bpc_…`) for the clinician plans — only if you'd rather make it yourself (below) | optional |
@@ -58,16 +59,25 @@ Then **push any commit** (or redeploy) so the new vars take effect.
 
 ## Sona Pro — the clinician plan on sale (12 Nov 2026)
 
-**$19.99 a month**, bought by a clinician from their dashboard
-(`/slp.html#premium`, or Settings → `POST /api/slp/plan { plan: "pro" }`).
-It turns on the clinician's dashboard (for accounts made from 12 Nov 2026),
-every game on their own phone, and every game for every family on their
-link, with no cap on families. Stamped `plan: slp-pro`.
+**$19.99 a month**, chosen on the website (`/plans`) and paid on Stripe's
+checkout (`POST /api/slp/plan { plan: "pro" }`). **The dashboard sells
+nothing** (Travis, 18 Nov 2026: "they dont purcahse in the dashboard. just
+on the site"): it has no plan page, prices or plan cards. A clinician who
+picked a plan on `/plans`, or a brand-new account, goes from the emailed
+sign-in link straight to this checkout (TRIALGO1); a locked account sees one
+screen pointing to `/plans#pricing`. Stripe's success and cancel return to
+`/slp.html…#premium`, which the dashboard reads. A paying clinician's
+**Manage billing** is in the dashboard's Settings, on the web. It turns on
+the clinician's dashboard (every account made from 12 Nov 2026 needs it, the
+13 to 17 Nov free-dashboard signups included since 17 Nov 2026), every game
+on their own phone, and every game for every family on their link, with no
+cap on families. Stamped `plan: slp-pro`.
 
 - **A 14-day free trial, once per clinician, card up front.** Checkout sets
   `trial_period_days: 14` and asks for a card; Stripe charges $19.99 when the
   trial ends unless they cancel, and a trial that ends with no card cancels.
-  A clinician who has ever had a Pro subscription gets no second trial.
+  A clinician who has ever had a Pro **or Clinic** subscription gets no
+  second trial: one trial per clinician, across both plans.
 - **Nothing to create to start selling.** Checkout uses an inline monthly
   price (1999 USD) from `lib/caseload.ts`, the same constant every page
   prints. For tidy product reports, create a monthly $19.99 Price and set
@@ -78,6 +88,44 @@ link, with no cap on families. Stamped `plan: slp-pro`.
   billing-page configuration as below.
 - **A free month for someone you choose:** make a Stripe coupon (100% off,
   duration "once" or "repeating"); checkout already accepts promotion codes.
+
+## Sona Clinic — a practice's plan (17 Nov 2026; HIDDEN since 18 Nov 2026)
+
+**Not on sale** (Travis, 18 Nov 2026: "hide it for now"). While
+`CLINIC_ON` is `false` (`lib/caseload.ts`, and `var CLINIC_ON` in
+`public/for-slps.html`), `/api/slp/plan` refuses a Clinic checkout and
+creates nothing, so there is nothing to set up in Stripe yet; what follows
+is for the day it is switched on.
+
+**$99 a month**, bought by a practice owner on the website (`/plans`, then
+`POST /api/slp/plan { plan: "clinic" }`). Every clinician the owner adds (up
+to 25, the owner included) gets what Sona Pro gives once they accept the
+emailed invite; the owner sees two numbers per clinician, never a child.
+
+- **The stamps are the plan.** The session and the subscription carry
+  `metadata.plan = "slp-clinic"` and `metadata.slp = <the owner's email>`,
+  and **never `tier`** (only `tier: charter` counts toward the 50 charter
+  spots). Who is on the team is kept by Sona, not in Stripe: never add
+  members' emails to the subscription. Don't edit the stamps by hand.
+- **The same trial as Pro:** 14 days, card up front, once per clinician
+  across both plans; a trial that ends with no card cancels.
+- **Nothing to create to start selling.** Checkout uses an inline monthly
+  price (9900 USD) from `lib/caseload.ts`. For tidy reports, create a
+  monthly $99 Price and set `STRIPE_PRICE_ID_SLP_CLINIC`. It must be
+  **exactly $99/month** — not $100, not per seat, no quantity — or the pages
+  and the charge disagree. No trial on the Price itself: the code adds it.
+- **Pro → Clinic is a second subscription, then cancel Pro.** The billing
+  portal cannot switch one plan for the other, so a Pro holder who buys
+  Clinic gets a second subscription on the same customer, and the dashboard
+  tells them to cancel Sona Pro in Manage billing once Sona Clinic is on.
+  Refund an overlap by hand if you choose to.
+- **Only the owner has Manage billing.** It opens the same caseload portal
+  configuration as below (cancel at period end), so a cancelled Clinic plan
+  keeps every clinician and their families covered to the end of the month
+  paid for. A member who presses it is told "Your clinic's owner manages
+  billing for Sona Clinic."
+- **More than 25 clinicians:** the page says to email; it is a manual job
+  (there is no seat setting in Stripe).
 
 ## The yearly clinician plans (24 Sep 2026; re-priced 29 Sep 2026; retired from sale 12 Nov 2026)
 
@@ -129,8 +177,8 @@ to do in Stripe for them.
   <clinician email>` and, on a caseload sold from 29 Sep, `metadata.addon =
   "1"` — and never `tier`: only `tier: charter` counts toward the 50 charter
   spots. Don't edit them by hand; coverage is read from them.
-- **Web only.** There is no App Store product for either plan, and there
-  should not be one (`NATIVE.md`).
+- **Web only.** There is no App Store product for any clinician plan (these,
+  Sona Pro or Sona Clinic), and there should not be one (`NATIVE.md`).
 
 ## Notes
 

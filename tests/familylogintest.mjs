@@ -40,7 +40,7 @@ const noComments = (src) => src
 const REGISTER = /\b(accuracy|score|scores|adherence|therapy|treatment|diagnos\w*)\b/i;
 
 // ═════════════════════════ part 1: the routes, for real ═════════════════════════
-for (const k of ["KV_REST_API_URL", "KV_REST_API_TOKEN", "UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN", "SLP_AUTH_SECRET", "VERCEL_ENV", "STRIPE_SECRET_KEY", "RESEND_API_KEY"]) delete process.env[k];
+for (const k of ["KV_REST_API_URL", "KV_REST_API_TOKEN", "UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN", "SLP_AUTH_SECRET", "VERCEL_ENV", "STRIPE_SECRET_KEY", "RESEND_API_KEY", "GHL_API_TOKEN", "GHL_LOCATION_ID", "GHL_EMAIL_FROM"]) delete process.env[k];
 const KV_URL = "https://kv.famlogin.test.invalid";
 process.env.KV_REST_API_URL = KV_URL;
 process.env.KV_REST_API_TOKEN = "kv-test-token";
@@ -86,8 +86,16 @@ function kvExec(cmd) {
   }
 }
 const realFetch = globalThis.fetch;
+// GoHighLevel, when a test turns it on (Add a family's one email): the
+// contact upsert and the message, each kept to be read.
+const GHL = [];
 globalThis.fetch = async (url, init) => {
   const u = String(url);
+  if (u.startsWith("https://services.leadconnectorhq.com/")) {
+    const body = JSON.parse(init.body);
+    GHL.push({ path: u.slice("https://services.leadconnectorhq.com".length), body });
+    return Response.json(u.endsWith("/contacts/upsert") ? { contact: { id: "ghl-contact-1" } } : { messageId: "ghl-message-1" });
+  }
   if (u === KV_URL) {
     const cmd = JSON.parse(init.body);
     KV.log.push(cmd.map(String));
@@ -125,17 +133,18 @@ try {
   for (const [k, rel] of Object.entries({
     login: "app/api/family/login/route.ts", password: "app/api/family/password/route.ts", slpLogin: "app/api/slp/login/route.ts",
     invite: "app/api/slp/invite/route.ts", claim: "app/api/slp/claim/route.ts", child: "app/api/slp/child/route.ts", roster: "app/api/slp/route.ts",
+    family: "app/api/slp/family/route.ts", homework: "app/api/homework/route.ts", childgames: "app/api/slp/childgames/route.ts",
   })) R[k] = L(rel);
 } catch (e) {
   console.log("(could not load the modules: " + (e && e.stack) + ")");
 }
-ok("the login library, the sign-up rule and every route load", !!(A && F && SU && R.login && R.password && R.slpLogin && R.invite && R.claim && R.child && R.roster));
+ok("the login library, the sign-up rule and every route load", !!(A && F && SU && R.login && R.password && R.slpLogin && R.invite && R.claim && R.child && R.roster && R.family));
 
 let ip = 0;
 const cookieFor = (email) => "slp_session=" + encodeURIComponent(A.signSession({ email, code: "", iat: Date.now(), exp: Date.now() + 600000 }));
 async function call(route, method, url, o = {}) {
   ip++;
-  const h = new Headers({ "content-type": "application/json", "x-real-ip": "10.7." + ((ip >> 8) & 255) + "." + (ip & 255), origin: "https://sona.test.invalid" });
+  const h = new Headers({ "content-type": "application/json", "x-real-ip": "10.7." + ((ip >> 8) & 255) + "." + (ip & 255), origin: o.origin || "https://sona.test.invalid" });
   if (o.as) h.set("cookie", cookieFor(o.as));
   const init = { method, headers: h };
   if (o.body !== undefined) init.body = JSON.stringify(o.body);
@@ -321,6 +330,160 @@ if (A && F && SU && R.login) {
     (await F.markUsed(stale), !KV.K.has("famlogin:" + made4.user)) &&
     (await F.setOwnPassword(stale, "a brand new one")) === false && !KV.K.has("famlogin:" + made4.user));
 
+  // ── ADD A FAMILY (SLPCLEAN1, Travis, 17 Nov 2026: "automatically create a
+  //    custom login username password for a parent with their email ...
+  //    super easily share"): one step makes the invite, its login and ONE
+  //    email to the parent, through GoHighLevel, tagged as the parent invite ──
+  {
+    const PAT = "pat@newclinic.org";
+    seedAcct(PAT, "pat-n1", { name: "Pat N", terms: C.PRO_TERMS });          // made from 12 Nov 2026, no Sona Pro: the dashboard is closed
+    process.env.GHL_API_TOKEN = "ghl-test-token"; process.env.GHL_LOCATION_ID = "loc-test";
+    const famBody = { parentEmail: "  parent@example.com ", label: "JT", age: "6", sounds: ["r", "S"], child: "Mia", note: "private note", pos: "v", repsPerDay: 90 };
+    r = await call(R.family, "POST", "/api/slp/family", { body: famBody });
+    ok("Add a family needs the clinician signed in", r.status === 401, r);
+    r = await call(R.family, "POST", "/api/slp/family", { as: RACHEL, body: famBody, origin: "https://elsewhere.example" });
+    ok("…from the dashboard's own site", r.status === 403, r);
+    r = await call(R.family, "POST", "/api/slp/family", { as: PAT, body: famBody });
+    ok("…with the dashboard open: a closed dashboard (Sona Pro's, not on) adds no family", r.status === 402 && r.json.needPlan === true, r);
+    // SLPPRO1 (17 Nov 2026): the 13 to 17 Nov free-dashboard signups were moved to the trial.
+    const FRAN = "fran@freedash.org";
+    seedAcct(FRAN, "fran-f1", { name: "Fran", terms: C.FREE_DASHBOARD_TERMS });
+    KV.K.set("slpacct:" + FRAN, JSON.stringify({ ...JSON.parse(KV.K.get("slpacct:" + FRAN)), freeDashboard: true }));
+    r = await call(R.family, "POST", "/api/slp/family", { as: FRAN, body: famBody });
+    ok("…and a free-dashboard signup of 13 to 17 Nov adds none either (moved to the trial)", r.status === 402 && r.json.needPlan === true, r);
+    r = await call(R.family, "POST", "/api/slp/family", { as: RACHEL, body: { label: "JT" } });
+    ok("…and the parent's email: none, no family", r.status === 400 && /Add the parent's email/.test(r.json.error), r);
+    r = await call(R.family, "POST", "/api/slp/family", { as: RACHEL, body: { parentEmail: "not an email" } });
+    ok("…a wrong-looking one, no family", r.status === 400 && /doesn't look right/.test(r.json.error), r);
+    ok("(nothing was made or sent for any of those)", GHL.length === 0 && !KV.log.some((c) => c.join(" ").includes("parent@example.com")));
+    r = await call(R.family, "POST", "/api/slp/family", { as: RACHEL, body: famBody });
+    const fam = r.json || {};
+    ok("one step: a username and a password, once, and the family's link", r.status === 200 && /^[a-z]+\d{4}$/.test(fam.user) && /^[a-z2-9]{8}$/.test(fam.password) && fam.emailed === true &&
+      new RegExp("/join\\.html\\?slp=RACHEL-K4&k=ABCD2345&inv=" + (fam.invite && fam.invite.token) + "$").test(fam.link || ""), r);
+    ok("…the child added from the initials, age, sounds and (since CHILDGAMES1) position alone (a name, a note or a count sent along is ignored)",
+      !!fam.invite && fam.invite.label === "JT" && fam.invite.age === "6" && JSON.stringify(fam.invite.sounds) === '["R","S"]' && fam.invite.pos === "v" && fam.invite.repsPerDay === 20 && fam.invite.note === "" && fam.invite.games === null && !("child" in fam.invite), fam.invite);
+    const famRec = JSON.parse(KV.K.get("famlogin:" + fam.user) || "null");
+    ok("…the login made for that invite, living no longer than it", !!famRec && famRec.inv === fam.invite.token && famRec.code === "rachel-k4" && KV.H.get("famlogins:rachel-k4")?.get("inv:" + fam.invite.token) === fam.user &&
+      KV.TTL.get("famlogin:" + fam.user) <= 30 * 86400 && KV.TTL.get("famlogin:" + fam.user) > 29 * 86400, famRec);
+    ok("…the password stored nowhere, only its hash", !allStored().some((v) => v.includes(fam.password)));
+    ok("…and the parent's address and the child's name stored nowhere, in no store command", !allStored().some((v) => /parent@example\.com|Mia|private note/.test(v)) && !KV.log.some((c) => /parent@example\.com|Mia/.test(c.join(" "))));
+    const upsert = GHL.filter((g) => g.path === "/contacts/upsert"), sentMsg = GHL.filter((g) => g.path === "/conversations/messages");
+    ok("ONE email, through GoHighLevel, to the parent, tagged as the parent invite", upsert.length === 1 && sentMsg.length === 1 && upsert[0].body.email === "parent@example.com" &&
+      JSON.stringify(upsert[0].body.tags) === '["sona-parent-invite"]' && sentMsg[0].body.emailTo === "parent@example.com", GHL);
+    const mail = sentMsg[0] ? sentMsg[0].body : {};
+    const both = String(mail.message || "") + "\n" + String(mail.html || "");
+    ok("…with the App Store link, Open Sona and tap Log in, the username, the password and the web link",
+      both.includes("https://apps.apple.com/us/app/sona-speech/id6785755867") && /Open Sona and tap Log in/.test(mail.message) && mail.message.includes("Username: " + fam.user) &&
+      mail.message.includes("Password: " + fam.password) && mail.message.includes(fam.link) && /Rachel K set up Sona for your family/.test(mail.subject), mail.message);
+    ok("…saying how to change the password, and the free version (Premium only because this caseload is covered)",
+      /change the password in Sona's Settings, under Your login/.test(mail.message) && /daily practice and free games/.test(mail.message) && /Premium is included, on Rachel K\./.test(mail.message), mail.message);
+    ok("…and nothing about the child: no initials, no name, no sound", !/\bJT\b|Mia|\bR\b sound|private note/.test(both), both.slice(0, 400));
+    r = await call(R.login, "POST", "/api/family/login", { body: { username: fam.user, password: fam.password, childId: "phoneF1" } });
+    ok("the emailed login connects the family, with the invite to claim on their yes", r.status === 200 && r.json.valid === true && r.json.inv === fam.invite.token, r);
+    // the daily cap, shared with the invite's email: the login is made, the email is not sent
+    GHL.length = 0;
+    KV.K.set("slpinvmail:" + SAM + ":" + new Date().toISOString().slice(0, 10), "30");
+    r = await call(R.family, "POST", "/api/slp/family", { as: SAM, body: { parentEmail: "other@example.com" } });
+    ok("past the 30-a-day parent email cap: the login is still made, and the reply says the email did not go", r.status === 200 && !!r.json.user && r.json.emailed === false && /30 emails today, the daily limit/.test(r.json.emailError) && GHL.length === 0, r);
+    ok("…with no initials given, the waiting family is called New family", r.json.invite && r.json.invite.label === "New family", r.json.invite);
+    KV.K.delete("slpinvmail:" + SAM + ":" + new Date().toISOString().slice(0, 10));
+    // 20 Nov 2026: an older account with a code but no family key met "Finish
+    // your profile first". Add a family now mints the key, as Settings would.
+    { const a = JSON.parse(KV.K.get("slpacct:" + SAM)); delete a.familyKey; KV.K.set("slpacct:" + SAM, JSON.stringify(a)); }
+    r = await call(R.family, "POST", "/api/slp/family", { as: SAM, body: { parentEmail: "nokey@example.com" } });
+    const minted = JSON.parse(KV.K.get("slpacct:" + SAM)).familyKey;
+    ok("an account with a code but no family key gets one, and the family is added", r.status === 200 && !!r.json.user && typeof minted === "string" && minted.length >= 6 && String(r.json.link || "").includes("k=" + encodeURIComponent(minted)), r);
+    r = await call(R.family, "POST", "/api/slp/family", { as: SAM, body: { parentEmail: "third@example.com" } });
+    const samMail = GHL.find((g) => g.path === "/conversations/messages");
+    ok("an uncovered caseload's email promises the free version and no Premium", r.status === 200 && !!samMail && /daily practice and free games/.test(samMail.body.message) && !/Premium/.test(samMail.body.message), samMail && samMail.body.message);
+    // SONA CLINIC (17 Nov 2026): a clinician who JOINED a live Clinic plan has
+    // everything a Sona Pro clinician has, Add a family and its Premium line
+    // included. The owner's plan is the mirror (no Stripe here: the last
+    // answer stands), and the membership is both team keys agreeing.
+    const OWNER = "olivia@brightsteps.example", MEMBER = "zoe@brightsteps.example";
+    seedAcct(OWNER, "olivia-k4", { name: "Olivia", terms: C.PRO_TERMS });
+    seedAcct(MEMBER, "zoe-k4", { name: "Zoe A", terms: C.PRO_TERMS });
+    const clinicMirror = JSON.stringify({ sub: "sub_clinic1", customer: "cus_olivia", status: "active", periodEnd: Math.floor(Date.now() / 1000) + 30 * 86400, cancelAtPeriodEnd: false, checkedAt: Date.now() });
+    GHL.length = 0;
+    KV.K.set("slpteam-of:" + MEMBER, OWNER);
+    hash("slpteam:" + OWNER).set(MEMBER, JSON.stringify({ state: "invited", addedAt: iso() }));
+    KV.K.set("slpplan-clinic:" + OWNER, clinicMirror);
+    r = await call(R.family, "POST", "/api/slp/family", { as: MEMBER, body: { parentEmail: "fourth@example.com" } });
+    ok("a clinician only INVITED to a Sona Clinic plan adds no family (402)", r.status === 402 && r.json.needPlan === true && GHL.length === 0, r);
+    hash("slpteam:" + OWNER).set(MEMBER, JSON.stringify({ state: "active", addedAt: iso(), acceptedAt: iso() }));
+    r = await call(R.family, "POST", "/api/slp/family", { as: MEMBER, body: { parentEmail: "fourth@example.com" } });
+    const zoeMail = GHL.find((g) => g.path === "/conversations/messages");
+    ok("a clinician who JOINED a live Sona Clinic plan adds a family, and the email carries Premium (her caseload is covered)",
+      r.status === 200 && !!r.json.user && r.json.emailed === true && !!zoeMail && /Premium is included, on Zoe A\./.test(zoeMail.body.message), r);
+    KV.K.set("slpplan-clinic:" + OWNER, JSON.stringify({ ...JSON.parse(clinicMirror), status: "canceled" }));
+    r = await call(R.family, "POST", "/api/slp/family", { as: MEMBER, body: { parentEmail: "fifth@example.com" } });
+    ok("…and once the owner's plan has ended, she adds none (402)", r.status === 402 && r.json.needPlan === true, r);
+    delete process.env.GHL_API_TOKEN; delete process.env.GHL_LOCATION_ID;
+    const famSrc = noComments(read("app/api/slp/family/route.ts"));
+    const at = (t) => famSrc.indexOf(t);
+    ok("the route keeps every wall, in order, and never logs or takes the clinic code from the body",
+      at("liveSession(readSession(req))") > 0 && at("foreignOrigin(req)") > at("liveSession(") && at('key: "slpinvite"') > at("foreignOrigin(") && at('key: "slplogin"') > at('key: "slpinvite"') &&
+      at("dashboardGate(") > at('key: "slplogin"') && at("createInvite(") > at("dashboardGate(") && at("makeLogin(") > at("createInvite(") && at('bumpDaily("slpinvmail"') > at("makeLogin(") &&
+      at("sendFamilyLoginEmail(") > at('bumpDaily("slpinvmail"') && !/console\.(log|error|warn)/.test(famSrc) && !/body\.code|searchParams/.test(famSrc) && !REGISTER.test(famSrc));
+  }
+
+  // ── CHILDGAMES1 (Travis, 25 Nov 2026): the therapist sets up the child's
+  //    Sona before the login: the sound, where in the word, and which games
+  //    the child sees (every game, or a list they pick) ──
+  {
+    const G = L("lib/childGames.ts");
+    ok("a picked list keeps only real games, each once, in the catalog's order; anything else is every game",
+      JSON.stringify(G.cleanGames(["HOOPS", "slice", "nope", "hoops"])) === '["slice","hoops"]' && G.cleanGames([]) === null && G.cleanGames("slice") === null &&
+      G.cleanGames(["puppy"]) === null && G.cleanGames(undefined) === null);
+    process.env.GHL_API_TOKEN = "ghl-test-token"; process.env.GHL_LOCATION_ID = "loc-test";
+    r = await call(R.family, "POST", "/api/slp/family", { as: RACHEL, body: { parentEmail: "games@example.com", sounds: ["R"], pos: "f", games: ["hoops", "slice", "nope", "hoops"] } });
+    const g = r.json || {};
+    ok("Add a family keeps the position and the picked games on the invite", r.status === 200 && g.invite && g.invite.pos === "f" && JSON.stringify(g.invite.games) === '["slice","hoops"]', r);
+    delete process.env.GHL_API_TOKEN; delete process.env.GHL_LOCATION_ID;
+    r = await call(R.login, "POST", "/api/family/login", { body: { username: g.user, password: g.password, childId: "phoneG1" } });
+    const gt = r.json && r.json.ticket;
+    r = await call(R.claim, "POST", "/api/slp/claim", { body: { code: "rachel-k4", ticket: gt, childId: "phoneG1", inv: g.invite.token } });
+    ok("(the family's yes claims it)", r.status === 200 && r.json.claimed === true, r);
+    ok("…and the list is kept for that child, beside homework, never inside it", KV.H.get("hwgames:rachel-k4")?.get("phoneG1") === '["slice","hoops"]' && !String(KV.H.get("hw:rachel-k4")?.get("phoneG1") || "").includes("hoops"));
+    r = await call(R.homework, "POST", "/api/homework", { body: { code: "rachel-k4", childId: "phoneG1", ticket: gt } });
+    ok("the child's phone reads the games with its homework, and the sound and position are its first homework",
+      r.status === 200 && JSON.stringify(r.json.games) === '["slice","hoops"]' && r.json.hw && JSON.stringify(r.json.hw.sounds) === '["R"]' && r.json.hw.pos === "f", r);
+    r = await call(R.homework, "POST", "/api/homework", { body: { code: "rachel-k4", childId: "phoneG1", ticket: "forged" } });
+    ok("…never without the child's ticket", r.status === 401 && !("games" in (r.json || {})), r);
+    // the dashboard's child page
+    r = await call(R.childgames, "GET", "/api/slp/childgames?childId=phoneG1", { as: RACHEL });
+    ok("the child page can't read a child who is not on the roster yet", r.status === 404, r);
+    hash("slp:rachel-k4").set("phoneG1", JSON.stringify({ child: "Ana", age: "6" }));
+    r = await call(R.childgames, "GET", "/api/slp/childgames?childId=phoneG1", { as: RACHEL });
+    ok("…and reads the list once they are", r.status === 200 && JSON.stringify(r.json.games) === '["slice","hoops"]', r);
+    r = await call(R.childgames, "GET", "/api/slp/childgames?childId=phoneG1");
+    ok("…signed in only", r.status === 401, r);
+    r = await call(R.childgames, "POST", "/api/slp/childgames", { as: RACHEL, origin: "https://elsewhere.example", body: { childId: "phoneG1", games: ["dino"] } });
+    ok("a change comes from the dashboard's own site only", r.status === 403 && KV.H.get("hwgames:rachel-k4").get("phoneG1") === '["slice","hoops"]', r);
+    r = await call(R.childgames, "POST", "/api/slp/childgames", { as: SAM, body: { childId: "phoneG1", games: ["dino"] } });
+    ok("…and only for a child on that clinician's own roster", r.status === 404, r);
+    r = await call(R.childgames, "POST", "/api/slp/childgames", { as: RACHEL, body: { childId: "phoneG1", games: ["dino", "feed"] } });
+    ok("the therapist changes the list", r.status === 200 && JSON.stringify(r.json.games) === '["feed","dino"]' && KV.H.get("hwgames:rachel-k4").get("phoneG1") === '["feed","dino"]', r);
+    r = await call(R.childgames, "POST", "/api/slp/childgames", { as: RACHEL, body: { childId: "phoneG1", games: null } });
+    ok("…or goes back to every game, which deletes the row", r.status === 200 && r.json.games === null && !KV.H.get("hwgames:rachel-k4").has("phoneG1"), r);
+    r = await call(R.homework, "POST", "/api/homework", { body: { code: "rachel-k4", childId: "phoneG1", ticket: gt } });
+    ok("…and the phone hears every game", r.status === 200 && r.json.games === null, r);
+    // a closed dashboard may lift a limit, never set one
+    const PIA = "pia@closedclinic.org";
+    seedAcct(PIA, "pia-c1", { name: "Pia", terms: C.PRO_TERMS });
+    hash("slp:pia-c1").set("kid9", JSON.stringify({ child: "Bo" }));
+    hash("hwgames:pia-c1").set("kid9", '["slice"]');
+    r = await call(R.childgames, "POST", "/api/slp/childgames", { as: PIA, body: { childId: "kid9", games: ["hoops"] } });
+    ok("a closed dashboard (no Sona Pro) can't pick games", r.status === 402 && KV.H.get("hwgames:pia-c1").get("kid9") === '["slice"]', r);
+    r = await call(R.childgames, "POST", "/api/slp/childgames", { as: PIA, body: { childId: "kid9", games: null } });
+    ok("…but can always give a child every game back", r.status === 200 && !KV.H.get("hwgames:pia-c1").has("kid9"), r);
+    // removing the child takes the list with it
+    hash("hwgames:rachel-k4").set("phoneG1", '["slice"]');
+    await L("lib/roster.ts").removeChild("rachel-k4", "phoneG1");
+    ok("removing the child deletes their game list too", !KV.H.get("hwgames:rachel-k4").has("phoneG1"));
+    ok("Delete my account deletes every child's game list", /gamesKey\(code\)/.test(noComments(read("lib/slpDelete.ts"))));
+  }
+
   // ── what the code may never do ──
   ok("no password or hash reaches a log", !ERRS.some((e) => /k7mp|Our Own Words|"hash"|"salt"/.test(e)), ERRS.slice(0, 3));
   const srcs = ["lib/familyLogin.ts", "lib/signups.ts", "app/api/family/login/route.ts", "app/api/family/password/route.ts", "app/api/slp/login/route.ts"].map((f) => noComments(read(f)));
@@ -402,8 +565,8 @@ async function section(name, fn) { posts = []; DATA = fixture(); try { await fn(
 const box = (page, sel) => page.evaluate((s) => { const e = document.querySelector(s); if (!e) return null; const r = e.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height, bottom: r.bottom, right: r.right, shown: !e.hidden && getComputedStyle(e).display !== "none" && r.height > 0 }; }, sel);
 
 try {
-  // ── the first screen: Log in ──
-  for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }]) {
+  // ── the first screen: two choices, Get started and "I have a login" (18 Nov 2026) ──
+  for (const viewport of [{ width: 390, height: 844 }, { width: 375, height: 667 }, { width: 320, height: 568 }, { width: 820, height: 1180 }]) {
     await section("the hello at " + viewport.width, async () => {
       const { context, page, errors } = await family({ viewport });
       await page.goto(BASE + "/onboarding.html");
@@ -413,21 +576,24 @@ try {
       const link = await box(page, "#loginLink"), btn = await box(page, "#nextBtn"), art = await box(page, ".studio-welcome-art");
       const words = await page.evaluate(() => [".studio-kicker", ".welcome-brand"].map((s) => { const r = document.querySelector(s).getBoundingClientRect(); return { x: r.x, y: r.y, right: r.right, bottom: r.bottom }; }));
       const clear = (a, b) => a.right <= b.x + 0.5 || b.right <= a.x + 0.5 || a.bottom <= b.y + 0.5 || b.bottom <= a.y + 0.5;
-      ok(tag + "the first screen offers Log in, at the top right, opening the login form",
-        !!link && link.shown && (await page.locator("#loginLink").textContent()).trim() === "Log in" &&
+      const text = (await page.locator("#loginLink").innerText()).replace(/\s+/g, " ").trim();
+      ok(tag + "the hello's second choice is a button under the picture, above Get started, opening the login form",
+        !!link && link.shown && text === (viewport.width < 360 ? "I have a login" : "I have a login from my speech therapist") &&
         (await page.locator("#loginLink").getAttribute("href")) === "/join.html?login=1" &&
-        link.y < art.y && link.right <= viewport.width + 0.5 && link.right >= viewport.width - 40, { link, art });
-      ok(tag + "…a full touch target, on screen, over none of the hello's words, with nothing to scroll",
-        link.h >= 44 && link.w >= 44 && link.y >= -0.5 && words.every((w) => clear(link, w)) && art.bottom <= btn.y + 0.5 &&
-        await page.evaluate(() => { const ob = document.querySelector(".ob"); return ob.scrollHeight <= ob.clientHeight + 1 && document.documentElement.scrollWidth <= innerWidth + 1; }), { link, words, art, btn });
+        link.y >= art.bottom - 0.5 && link.bottom <= btn.y + 0.5, { text, link, art, btn });
+      ok(tag + "…a big touch target on one line, as wide as Get started, over none of the hello's words, with nothing to scroll",
+        link.h >= 48 && link.h <= 60 && Math.abs(link.w - btn.w) < 2 && Math.abs(link.x - btn.x) < 2 && words.every((w) => clear(link, w)) && art.bottom <= btn.y + 0.5 &&
+        await page.evaluate(() => { const ob = document.querySelector(".ob"); const l = document.getElementById("loginLink"); return ob.scrollHeight <= ob.clientHeight + 1 && document.documentElement.scrollWidth <= innerWidth + 1 && l.scrollWidth <= l.clientWidth + 1; }), { link, words, art, btn });
+      ok(tag + "…a cream pill in action.css's colours, never the teal or coral of Get started",
+        await page.evaluate(() => { const l = getComputedStyle(document.getElementById("loginLink")), r = getComputedStyle(document.documentElement); const c = (v) => { const d = document.createElement("i"); d.style.color = v; document.body.appendChild(d); const o = getComputedStyle(d).color; d.remove(); return o; }; return l.backgroundColor === c(r.getPropertyValue("--cream-card")) && l.color === c(r.getPropertyValue("--cream-ink")) && l.backgroundColor !== getComputedStyle(document.getElementById("nextBtn")).backgroundColor; }));
       ok(tag + "…and the hello is still one message with no question", (await page.locator('[data-step="welcome"]').innerText()).indexOf("?") < 0 && (await page.locator("#nextBtn").textContent()) === "Get started");
       await page.locator("#nextBtn").click();
       await page.waitForFunction(() => document.body.dataset.setupScreen === "name");
-      ok(tag + "Log in belongs to the hello only", await page.locator("#loginLink").isHidden());
-      // The footer's button is in the same place on every screen, Log in or
-      // not, so a double tap on it moves one screen (onboardingtest).
+      ok(tag + "I have a login belongs to the hello only", await page.locator("#loginLink").isHidden());
+      // The footer's button is in the same place on every screen, login
+      // button or not, so a double tap on it moves one screen (onboardingtest).
       const btn2 = await box(page, "#nextBtn");
-      ok(tag + "…and Get started sits at the height of the next screen's button (Back takes its left there): Log in moves nothing", Math.abs(btn2.y - btn.y) < 1 && Math.abs(btn2.bottom - btn.bottom) < 1, { btn, btn2 });
+      ok(tag + "…and Get started sits at the height of the next screen's button (Back takes its left there): the login button moves nothing", Math.abs(btn2.y - btn.y) < 1 && Math.abs(btn2.bottom - btn.bottom) < 1, { btn, btn2 });
       if (viewport.width === 390) { await page.locator("#backBtn").click(); await page.waitForFunction(() => document.body.dataset.setupScreen === "welcome"); await page.screenshot({ path: path.join(OUT, "sona-login-hello.png") }); }
       ok(tag + "no page errors", errors.length === 0, errors);
       await context.close();
@@ -437,7 +603,7 @@ try {
     const { context, page } = await family({ ls: { "sona.slpok": "RACHEL-K4", "sona.slpunlock": "1" } });
     await page.goto(BASE + "/onboarding.html");
     await page.waitForFunction(() => document.body.dataset.setupScreen === "welcome");
-    ok("a device a speech therapist already connected is not offered Log in again", await page.locator("#loginLink").isHidden());
+    ok("a device a speech therapist already connected is not offered the login button again", await page.locator("#loginLink").isHidden());
     await context.close();
   });
 
@@ -448,7 +614,7 @@ try {
     await page.waitForFunction(() => document.body.dataset.setupScreen === "welcome");
     await page.locator("#loginLink").click();
     await page.waitForFunction(() => location.pathname === "/join.html" && document.getElementById("jLogin").style.display === "block");
-    ok("Log in opens the login form, with the address cleaned at once", (await page.evaluate(() => location.search)) === "" && (await page.locator("#jTitle").textContent()) === "Log in" && await page.locator("#jForm").isHidden());
+    ok("I have a login opens the login form, with the address cleaned at once", (await page.evaluate(() => location.search)) === "" && (await page.locator("#jTitle").textContent()) === "Log in" && await page.locator("#jForm").isHidden());
     ok("…a username box and a password box, with nothing the phone would auto-correct",
       await page.evaluate(() => { const u = document.getElementById("jUser"), p = document.getElementById("jPass"); return u.autocomplete === "username" && u.getAttribute("autocapitalize") === "none" && p.type === "password" && p.autocomplete === "current-password"; }));
     await page.locator("#jUser").fill("otter4827"); await page.locator("#jPass").fill("wrong");
@@ -477,7 +643,7 @@ try {
     await page.locator("#jEmailGo").click();
     await page.waitForFunction(() => location.pathname === "/onboarding.html");
     await page.waitForFunction(() => document.body.dataset.setupScreen === "welcome");
-    ok("then setup, as after the link, where Log in is no longer offered", await page.locator("#loginLink").isHidden());
+    ok("then setup, as after the link, where the login button is no longer offered", await page.locator("#loginLink").isHidden());
     ok("no page errors", errors.length === 0, errors);
     await context.close();
   });

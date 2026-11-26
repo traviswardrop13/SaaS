@@ -1317,7 +1317,8 @@ await scenario('the price never loads: Continue comes back',async()=>{
  // first for everyone, and the story waits on Home)
  ok('…and the hand-off never sends a child to a story: no storyNow, no story player\'s address anywhere in the page\'s code',!/storyNow|\/adventure\.html/.test(code));
  // (Fruit Slice for every age: Feed Echo was the 3-4s' first game until 31 Oct 2026)
- ok('…and that first game is Fruit Slice for every age: sona.js\'s firstGameKey answers "slice" and nothing else',/function firstGameKey\(\) \{ return "slice"; \}/.test(readFileSync(root+'/sona.js','utf8')));
+ // (CHILDGAMES1, 25 Nov 2026: unless the child's speech therapist left Fruit Slice off their games; childgamestest plays it)
+ ok('…and that first game is Fruit Slice for every age: sona.js\'s firstGameKey answers "slice", or the therapist\'s first game when Fruit Slice is not on their list',/function firstGameKey\(\) \{ const g = slpGames\(\); return !g \|\| g\.indexOf\("slice"\) >= 0 \? "slice" : g\[0\]; \}/.test(readFileSync(root+'/sona.js','utf8')));
  const leave=code.slice(code.indexOf('function leaveReady('),code.indexOf('function showHandoff('));
  ok('leaving ready (or the reminder after it) saves the profile and writes the marker before it names the price page',leave.indexOf('saveSetup()')>0&&leave.indexOf('saveSetup()')<leave.indexOf('Sona.setupAfterMark')&&leave.indexOf('Sona.setupAfterMark')<leave.indexOf('"/subscribe.html?setup=1"'),leave.slice(0,200));
  ok('every "setup step" is sent through SonaAnalytics, with the screen\'s key and nothing else',(code.match(/SonaAnalytics\.track\("setup step",\{step:key\}\)/g)||[]).length===1&&!/(?:^|[^.\w])track\("setup step"/.test(code)&&!/Sona\.track\(/.test(code));

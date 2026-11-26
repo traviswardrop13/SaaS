@@ -41,7 +41,7 @@
     <a class="back" id="privacyBack" href="/">&lsaquo; Back</a>
     <header><span class="leo">🦜</span><span class="name">Sona</span></header>
     <h1>Privacy Policy</h1>
-    <div class="updated">Last updated: November 16, 2026</div>
+    <div class="updated">Last updated: November 24, 2026</div>
 
     <p class="lede">Sona ("Sona," "we," "us") helps children practice their speech sounds at home,
     alongside their speech therapy. We built Sona for kids, so protecting their privacy — and giving
@@ -70,14 +70,15 @@
       <li><strong>Optional names you provide</strong> — if you add names of family members or friends
         to personalize daily stories, that text is used to generate those stories.</li>
       <li><strong>Payment information</strong> — handled by our payment processor (Stripe) when a
-        parent buys Premium on our website, or a clinician buys Premium for themselves or their caseload.
-        We do not receive or store full card numbers. Premium bought inside the iPhone or iPad app is
+        parent buys Premium on our website, or a clinician starts Sona Pro (a card is
+        entered at checkout even for a free trial). We do not receive or store full card numbers. Premium bought inside the iPhone or iPad app is
         handled by Apple; if you gave the app your email, RevenueCat (which keeps track of app purchases for us) tells us when
         that Premium starts, renews, is cancelled or ends (see &ldquo;In-app purchases&rdquo; below).</li>
       <li><strong>An invite email from your clinician</strong> — if your child&rsquo;s speech-language
         pathologist typed your email address when adding your child, we use it once, to email you
-        their Sona link. We do not keep it: it is not stored, not added to any email list, and not
-        written to our logs.</li>
+        their Sona link, or a Sona login for the app (a username and password). Sona&rsquo;s own server
+        does not keep it: it is not stored, not added to any email list, and not written to our logs.
+        Resend, which delivers the email, keeps a record of it.</li>
       <li><strong>Messages you send us</strong> &mdash; if you use &ldquo;Talk to us&rdquo; in the
         grown-ups&rsquo; area to leave feedback, we receive what you choose to send. See
         &ldquo;Talk to us&rdquo; below.</li>
@@ -137,6 +138,10 @@
     means the phone judged that what it heard had the shape of the target sound — not that the whole
     word was produced correctly. The dashboard says so on every screen that shows one.</p>
 
+    <!-- SONA CLINIC IS HIDDEN (18 Nov 2026, lib/caseload CLINIC_ON): its
+         section, and its lines in the providers, the store, the cancel
+         answer and the retention list, come back with the switch; CLAUDE.md
+         ("Sona Clinic") says where. -->
     <h2>Talk to us</h2>
     <p>A message from the grown-ups&rsquo; area holds only what you choose
     to send: the topics you tap, what you write and whether you would recommend Sona. It also says
@@ -144,7 +149,7 @@
     email only to reply to you; it is not added to our email list. The message is
     kept by our data store (Upstash) &mdash; we keep the newest 1,000 messages, and the whole inbox is
     deleted a year after the last one arrives &mdash; and the Sona team is notified in Slack and by an
-    email to our own inbox, sent by our email provider (GoHighLevel). Please
+    email to our own inbox, sent by our email provider (Resend). Please
     leave out your child&rsquo;s name and other private details: nothing on that form asks for them.</p>
 
     <!-- Written true whether the board is switched on or off (BOARD_LIVE in
@@ -154,7 +159,7 @@
     <p>Sona may offer a monthly Practice Board. It is off for every child unless a grown-up turns it
     on in Settings and confirms by tapping a link we email to them; it stays off on phones set up
     through a speech therapist or a school. To send that email we give the address to our email
-    provider (GoHighLevel), which keeps it as a contact; Sona&rsquo;s own server keeps no copy of it, only a scrambled form for one day so the same address
+    provider (Resend); Sona&rsquo;s own server keeps no copy of it, only a scrambled form for one day so the same address
     isn&rsquo;t sent repeat emails. If it is on, Sona&rsquo;s server keeps, for each child: a random
     board number, a nickname Sona makes up (like &ldquo;Brave Fox 42&rdquo;), the buddy picture&rsquo;s
     name, the time zone setting, the date it was turned on, and which days this month the child met
@@ -199,8 +204,9 @@
       <li><strong>Story &amp; coaching generation (AI)</strong> — generates practice stories and
         coaching tips; this may include a child's first name or names you've added, to personalize the story.</li>
       <li><strong>Payments</strong> — Stripe processes what is bought on our website: a family&rsquo;s
-        Premium, and a clinician&rsquo;s Premium for themselves or their caseload. Stripe receives the buyer&rsquo;s email address
-        and payment details, and nothing about a child.</li>
+        Premium, and a clinician&rsquo;s Sona Pro (and the yearly clinician plans sold
+        before November 12, 2026, for those still renewing). Stripe receives the buyer&rsquo;s email
+        address and payment details, for a free trial too, and nothing about a child.</li>
       <li><strong>In-app purchases</strong> — Premium bought inside the iPhone or iPad app is sold and
         billed by Apple, and RevenueCat checks with Apple whether that purchase is active, under a random
         identifier. If you gave the app your email (setup&rsquo;s email step, or the weekly progress report&rsquo;s switch in Settings), the app also gives that
@@ -212,7 +218,7 @@
       <li><strong>Hosting</strong> — Vercel runs the site and its server routes.</li>
       <li><strong>Data store</strong> — Upstash holds clinician accounts, the caseload information
         described above, clinician sign-in sessions, a copy of Stripe&rsquo;s answer about whether a
-        clinician&rsquo;s Premium plans are active, the messages parents send from &ldquo;Talk to
+        clinician&rsquo;s plans are active, the messages parents send from &ldquo;Talk to
         us&rdquo; and clinicians send from their dashboard, our own copy of each email address given
         to join our email list, only for a child a grown-up put on the Practice Board, the board
         entry described above, only for a household that asked for it, the weekly progress
@@ -220,39 +226,40 @@
         RevenueCat last told us about their Premium (on its free days, paid, cancelled, a payment
         problem, ended, or moved to another device, and when it ends), with the random identifier
         RevenueCat gave that phone, so we can tell when Premium moves to another device. It never holds audio.</li>
-      <li><strong>Email delivery</strong> — GoHighLevel, our customer contact tool, delivers a clinician&rsquo;s sign-in link, the one
+      <li><strong>Email delivery</strong> — Resend delivers a clinician&rsquo;s sign-in link, the one
         thank-you email when you sign up on speaksona.com, the welcome emails and tips from Rachel to
         anyone who gave us their address, the weekly progress report to a grown-up who asked for it, an
         email on Mondays to the other parents on our list showing an example report (made-up numbers,
         nothing about their child), and,
         for a parent who gave the app their email, a note a day or two before Premium&rsquo;s free days
-        end (only while they are still on them) and one note after Premium ends, and the one
-        invite email a clinician can ask us to send a parent. These emails never go to children and never
-        contain a child&rsquo;s name. To send an email, GoHighLevel keeps the address it goes to as a
-        contact, with the emails sent to it. So the weekly progress report&rsquo;s numbers (days, reps
-        and sounds, never a child&rsquo;s name) pass through GoHighLevel and stay there with that email.
-        A parent&rsquo;s address a clinician types is given to GoHighLevel only to deliver that one
-        email; GoHighLevel keeps it as a contact, and Sona&rsquo;s own server keeps no copy of it. If Sona offers the Practice Board, GoHighLevel also delivers the
+        end (only while they are still on them) and one note after Premium ends, the one
+        and the invite email a clinician can ask us to send a parent. These emails never go to children and never
+        contain a child&rsquo;s name. Resend keeps a record of each email it delivers, as email services
+        do, so the weekly progress report&rsquo;s numbers (days, reps and sounds,
+        never a child&rsquo;s name) pass through Resend. A parent&rsquo;s address a clinician types is given to Resend only to
+        deliver that one email, and Sona&rsquo;s own server keeps no copy of it. When that email carries a
+        Sona login, it carries the password too, so Resend&rsquo;s record of the email holds it;
+        Sona&rsquo;s server keeps only a scrambled copy of the password, and the family can change it in
+        the app&rsquo;s Settings. If Sona offers the Practice Board, Resend also delivers the
         confirmation email a grown-up asks for to turn it on; the address is used only to send it, and
-        Sona&rsquo;s own server keeps no copy (only a scrambled form for one day). GoHighLevel also delivers, to the Sona team&rsquo;s own inbox, a copy of each
+        Sona&rsquo;s own server keeps no copy (only a scrambled form for one day). Resend also delivers, to the Sona team&rsquo;s own inbox, a copy of each
         message sent from &ldquo;Talk to us&rdquo;, with the email address you gave (if any) so we can
-        reply. If you unsubscribe from any Sona email, GoHighLevel stops sending you email, sign-in
-        links included.</li>
-      <li><strong>Email list</strong> — Resend keeps Sona&rsquo;s email list, the people
-        GoHighLevel sends the welcome emails and tips from Rachel to, and, to parents, an email on Mondays. It holds that email address, a
+        reply.</li>
+      <li><strong>Email list</strong> — Resend keeps Sona&rsquo;s email list, and sends its emails:
+        the welcome emails and tips from Rachel, and, to parents, an email on Mondays. It holds that email address, a
         clinician&rsquo;s own first name, whether the person is a speech therapist, a parent or something
         else, where they gave it (this website, the app or a sign-up page), and, for a parent who gave the app their
         address, whether they started Sona Premium there (its free days, or paid at once) —
         never anything about a child. Unsubscribe from any of its emails.</li>
-      <li><strong>Contact list</strong> — GoHighLevel, our customer contact tool, is sent the same
-        email address when it joins our email list, with a clinician&rsquo;s own first name, whether
-        the person is a speech therapist, a parent or something else, where they gave it, which ad or
-        link brought them there, and, for a parent who gave the app their address, whether they
-        started Sona Premium there — never anything about a child.</li>
-      <li><strong>Homework drafting</strong> &mdash; if a clinician requests an AI draft, Anthropic receives
-        only the selected sound, word position and practice count. The clinician can edit the draft before
-        sharing it. Sona sends no account details, roster information, recordings or typed notes to Anthropic
-        for this feature.</li>
+      <li><strong>Session games</strong> &mdash; when a clinician asks Session games on their
+        dashboard to pick Sona games for a session, Anthropic, our AI provider, receives the target
+        sound, the word position, the age band and the session length they choose, and the few words
+        they may type about what the child loves, and picks from Sona&rsquo;s own list of games. Sona adds
+        nothing to that (no account details, roster information, practice data or recordings) and does
+        not store the request or the picks. The page asks clinicians not to type a child&rsquo;s name, and
+        will not send a name from their caseload. A game the clinician then plays from Session games
+        runs on their own device with a temporary profile: it saves nothing to any family&rsquo;s Sona and
+        sends nothing.</li>
       <li><strong>Team messaging</strong> — Slack notifies the Sona team when a parent sends a message
         from &ldquo;Talk to us&rdquo;, or a clinician sends one from their dashboard. The
         notification carries that message and what came with it: for a parent, everything listed under
@@ -281,7 +288,7 @@
     Limited, privacy-respecting analytics (PostHog, with autocapture turned off) run on adult-facing
     pages of our website and of the app — such as marketing, parent setup, and settings — to
     understand general usage under the same anonymous identifier.
-    On four of those screens only — speaksona.com&rsquo;s home page, speaksona.com/try, parent setup
+    On four of those screens only — speaksona.com/for-parents, speaksona.com/try, parent setup
     up to the moment the phone is handed to the child, and the plan screen when a grown-up opens it
     from setup or after a first practice run — PostHog may also make a session recording: a replay
     of how the page looked and where it was tapped or scrolled, so we can see where those screens
@@ -292,6 +299,10 @@
     and the &ldquo;practice is ready&rdquo; screen that repeats your answer, are never in a
     recording. A session recording never includes a child&rsquo;s practice, games or books,
     Settings, sound or voice.
+    Some of our website&rsquo;s pages for grown-ups, such as the parents&rsquo; and speech
+    therapists&rsquo; pages, carry Meta&rsquo;s ad pixel, so we can tell which of our ads work: it
+    notes visits to those pages and steps such as giving an email or starting a free trial. It never
+    runs in the iPhone or iPad app or on a child&rsquo;s practice screens.
     <strong>The Sona iOS app contains no advertising trackers, and no third-party
     analytics ever run on a child's practice screen.</strong></p>
 
@@ -318,7 +329,7 @@
     <ul>
       <li><strong>Access &amp; deletion</strong> — email us to review or delete your or your child's information.</li>
       <li><strong>Cancel</strong> — you can cancel your subscription at any time. A clinician cancels
-        their Premium from their dashboard: Premium &rarr; Manage billing.</li>
+        Sona Pro from their dashboard on speaksona.com: Settings &rarr; Manage billing.</li>
       <li>Depending on where you live, you may have additional rights over your personal information; contact us to exercise them.</li>
     </ul>
 
@@ -332,7 +343,8 @@
     caseload information described above, deleted when a parent stops sharing, when the clinician
     removes the child or their account, or automatically about 150 days
     after that caseload last received practice; a pending invite, which deletes itself 30 days
-    after it is created if the family never opens it; the messages sent to us from &ldquo;Talk to
+    after it is created if the family never opens it;
+    the messages sent to us from &ldquo;Talk to
     us&rdquo;, with any reply email &mdash; the newest 1,000, deleted a year after the last one arrives;
     our own copy of each email address given to join our email list &mdash; with where it was given, whether it came from a parent or a clinician, the ad or
     link that brought them, if any, and whether a parent started Sona Premium in the app &mdash; until you ask us to remove it;

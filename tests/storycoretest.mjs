@@ -634,7 +634,7 @@ await section("the demonstration window", async () => {
   ok("storyOpen is the books' rule, and the founders' preview reads its own plan",
     /function storyOpen\(\) \{[\s\S]{0,200}libraryPreview\(\)\) return previewPlan\(\)\.state === "trial";[\s\S]{0,40}return isFree\(\) \|\| premium\(\) \|\| trialActive\(\);/.test(SONA)
     && /function storyShown\(\) \{ try \{ return storyOpen\(\) \|\| offerOnLock\(\);/.test(SONA));
-  ok("gameAccess and gameBounce know the story keys before the catalog's check", /function gameAccess\(key, options\) \{[\s\S]{0,600}if \(_storyKey\(key\)\) \{[\s\S]{0,400}\}\s*key = gameKey\(key\);/.test(SONA) && /_storyKey\(key\) \? "\/today\.html"/.test(SONA));
+  ok("gameAccess and gameBounce know the story keys before the catalog's check", /function gameAccess\(key, options\) \{[\s\S]{0,600}if \(_storyKey\(key\)\) \{[\s\S]{0,400}\}\s*key = gameKey\(key\);/.test(SONA) && /_storyKey\(key\)( \|\| _slpHidden\(gameKey\(key\)\))? \? "\/today\.html"/.test(SONA));
   ok("the story readers are on the one-line export", /global\.Sona = \{[^\n]*\bSTORY_DAYS, storyOpen, storyShown, storyEnding, storySeen\b/.test(SONA));
 }
 

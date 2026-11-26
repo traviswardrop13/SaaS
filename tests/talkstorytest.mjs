@@ -35,6 +35,11 @@ const T = sandbox.window.SonaTalkStories;
 const SRC = readFileSync(ROOT + "/sona.js", "utf8");
 const TALK = [...((SRC.match(/const STORY_TALK = \[([\s\S]*?)\n  \];/) || ["", ""])[1]).matchAll(/\{ id: "([a-z]+)", sound: "([A-Z]+)", hero: "([a-z]+)", name: "([^"]+)", title: "([^"]+)",\s*line: "([^"]+)" \}/g)]
   .map((m) => ({ id: m[1], sound: m[2], hero: m[3], name: m[4], title: m[5], line: m[6] }));
+// The later talking stories (TALKMORE1, after the 14 days), in talk-stories.js after Day 1's;
+// talkmoretest plays when they show. Their lines keep every rule below.
+const MORE = [...((SRC.match(/const STORY_TALK_MORE = \[([\s\S]*?)\n  \];/) || ["", ""])[1]).matchAll(/\{ id: "([a-z]+)", sound: "([A-Z]+)", hero: "([a-z]+)", name: "([^"]+)", title: "([^"]+)",\s*line: "([^"]+)", ready: (?:true|false) \}/g)]
+  .map((m) => ({ id: m[1], sound: m[2], hero: m[3], name: m[4], title: m[5], line: m[6], more: true }));
+const ALL = TALK.concat(MORE);
 const LEX = JSON.parse(readFileSync(new URL("./booklex.json", import.meta.url), "utf8"));
 const TARGET = { R: "R", P: "P", B: "B", M: "M", N: "N", T: "T", D: "D", K: "K", G: "G", F: "F", V: "V", S: "S", Z: "Z", SH: "SH", CH: "CH", J: "JH", L: "L", TH: "TH", THV: "DH" };
 const VOWEL = /^(AA|AE|AH|AO|AW|AY|EH|ER|EY|IH|IY|OW|OY|UH|UW)$/;
@@ -44,8 +49,9 @@ const linesOf = (sc) => (typeof sc.line === "string" ? [sc.line] : [sc.line.big,
 const STORY_IDS = [...((SRC.match(/const STORY_DAYS = \[([\s\S]*?)\n  \];/) || ["", ""])[1]).matchAll(/\{ id: "([a-z]+)"/g)].map((m) => m[1]);
 {
   const ids = Object.keys(T);
-  ok("sona.js's STORY_TALK and talk-stories.js name the same stories, each with its sound", TALK.length >= 1 && TALK.map((t) => t.id).join() === ids.join() && TALK.every((t) => T[t.id].sound === t.sound), { TALK, ids });
-  ok("…one story a sound, and no id is a STORY_DAYS day or a catalog game", new Set(TALK.map((t) => t.sound)).size === TALK.length && TALK.every((t) => !STORY_IDS.includes(t.id) && !new RegExp("\\n    " + t.id + ": \\{ name:").test(SRC)), TALK.map((t) => t.id));
+  ok("sona.js's STORY_TALK, then STORY_TALK_MORE, and talk-stories.js name the same stories, each with its sound", TALK.length >= 1 && ALL.map((t) => t.id).join() === ids.join() && ALL.every((t) => T[t.id].sound === t.sound), { ALL: ALL.map((t) => t.id), ids });
+  ok("…one Day 1 story a sound, and no id is a STORY_DAYS day or a catalog game", new Set(TALK.map((t) => t.sound)).size === TALK.length && ALL.every((t) => !STORY_IDS.includes(t.id) && !new RegExp("\\n    " + t.id + ": \\{ name:").test(SRC)), ALL.map((t) => t.id));
+  ok("…every later story is in a sound that has a Day 1 story, and no id twice", MORE.every((t) => TALK.some((d) => d.sound === t.sound)) && new Set(ALL.map((t) => t.id)).size === ALL.length, MORE.map((t) => t.id + " " + t.sound));
   ok("every story: 8 intro scenes and 4 ending scenes; ages 3-4 read 6 and 3", ids.every((id) => runOf(id, "intro", false).length === 8 && runOf(id, "ending", false).length === 4 && runOf(id, "intro", true).length === 6 && runOf(id, "ending", true).length === 3),
     ids.map((id) => id + " " + runOf(id, "intro", true).length + "/" + runOf(id, "ending", true).length));
   ok("…their pictures are s01-s08 and e01-e04, with a wash", ids.every((id) => T[id].intro.map((s) => s.art).join() === "s01,s02,s03,s04,s05,s06,s07,s08" && T[id].ending.map((s) => s.art).join() === "e01,e02,e03,e04" && /^#[0-9a-f]{6}$/i.test(T[id].wash)));
@@ -72,7 +78,7 @@ const STORY_IDS = [...((SRC.match(/const STORY_DAYS = \[([\s\S]*?)\n  \];/) || [
     || /\bMia\b/.test(l));
   ok("every line: 120 characters at most, plain punctuation, no word about talking or grading, no count of stars", bad.length === 0, bad.slice(0, 6));
   ok("every line ending names a gold star for the helper map, and never counts", ids.every((id) => { const e = T[id].ending[3]; return linesOf(e).every((l) => /gold star/i.test(l) && /helper map/i.test(l)); }));
-  ok("every Home line and title is short and plain", TALK.every((t) => t.line.length <= 100 && t.title.length <= 32 && !/\b(say|sound|voice)\b/i.test(t.line)), TALK);
+  ok("every Home line and title is short and plain", ALL.every((t) => t.line.length <= 100 && t.title.length <= 32 && !/\b(say|sound|voice)\b/i.test(t.line)), ALL.filter((t) => !(t.line.length <= 100 && t.title.length <= 32)));
   const TCODE = readFileSync(ROOT + "/talk-stories.js", "utf8");
   ok("talk-stories.js is data alone and ES5: no call, no storage, no request, no arrow, let, const, class or template",
     !/fetch\(|localStorage|sessionStorage|Sona\.|XMLHttpRequest|sendBeacon/.test(TCODE) && !/=>|\blet\s|\bconst\s|\bclass\s|`/.test(TCODE));
@@ -81,7 +87,7 @@ const STORY_IDS = [...((SRC.match(/const STORY_DAYS = \[([\s\S]*?)\n  \];/) || [
   const parts = ["s01", "s02", "s03", "s04", "s05", "s06", "s07", "s08", "e01", "e02", "e03", "e04"];
   ok("every talking story has its picture prompts: a lineup of its own, a Home card and all twelve pages", ids.every((id) => { const s = P.stories.find((x) => x.id === id); return s && s.talk === true && JSON.stringify(s.lineups) === JSON.stringify([id]) && s.home && parts.every((p) => s.scenes[p] && s.scenes[p].picture); }), ids);
   const drawn = ids.filter((id) => existsSync(path.join(ROOT, "assets/adventure", id, "s01.webp")));
-  ok("a story whose pictures are drawn has all twelve and its Home card", drawn.every((id) => parts.every((p) => existsSync(path.join(ROOT, "assets/adventure", id, p + ".webp"))) && existsSync(path.join(ROOT, "assets/crafted/home-" + TALK.find((t) => t.id === id).hero + ".webp"))), drawn);
+  ok("a story whose pictures are drawn has all twelve and its Home card", drawn.every((id) => parts.every((p) => existsSync(path.join(ROOT, "assets/adventure", id, p + ".webp"))) && existsSync(path.join(ROOT, "assets/crafted/home-" + ALL.find((t) => t.id === id).hero + ".webp"))), drawn);
   console.log("  (pictures drawn: " + (drawn.length ? drawn.join(", ") : "none yet") + ")");
 }
 

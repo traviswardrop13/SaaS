@@ -159,108 +159,133 @@ struct GrownUpsView: View {
         }
     }
 
+    // ONE page, three short groups, one row look. The child comes first; a
+    // child's practice is changed in one group (it used to be split across
+    // "Players", "Player settings" and a "Sound on Home" card on this page).
+    // Nothing was removed: every old row is still here, one tap away.
     private var settings: some View {
-        VStack(alignment: .leading, spacing: 24) {
-            introduction(
-                icon: "slider.horizontal.3",
-                eyebrow: "A LITTLE ROOM FOR YOU",
-                title: "Make it yours.",
-                detail: "Manage practice and family settings."
-            )
-
-            VStack(alignment: .leading, spacing: 9) {
-                Text("Your login")
-                    .font(.system(.title2, design: .rounded).weight(.bold))
-                    .accessibilityAddTraits(.isHeader)
-                if let familyUsername {
-                    Text(familyUsername)
-                        .privacySensitive()
-                        .foregroundStyle(GrownUpsPalette.muted)
-                    NavigationLink {
-                        FamilyChangePasswordView(onChangePassword: onChangePassword)
-                    } label: {
-                        Label("Change password", systemImage: "key")
-                            .frame(minHeight: 44)
-                    }
-                    .accessibilityIdentifier("grownups-change-password")
-                } else {
-                    Button(action: onFamilyLogin) {
-                        Label("I have a login from my speech therapist", systemImage: "person.badge.key")
-                            .frame(minHeight: 44)
-                            .multilineTextAlignment(.leading)
-                    }
-                    .accessibilityIdentifier("grownups-family-login")
-                }
-                if sharingProgress {
-                    Button(role: .destructive) { showSharingConfirmation = true } label: {
-                        Label("Stop sharing with your speech therapist", systemImage: "person.crop.circle.badge.minus")
-                            .frame(minHeight: 44)
-                            .multilineTextAlignment(.leading)
-                    }
-                    .disabled(stoppingSharing)
-                    .accessibilityIdentifier("grownups-stop-sharing")
-                }
-                if stoppingSharing { ProgressView() }
-                if !sharingStatus.isEmpty {
-                    Text(sharingStatus)
-                        .font(.subheadline)
-                        .foregroundStyle(GrownUpsPalette.muted)
-                }
-            }
-
+        VStack(alignment: .leading, spacing: 22) {
             NavigationLink {
                 PreviewPlayersView(players: players, activeID: player.id, onSelect: onSwitchPlayer, onAdd: onAddPlayer,
                                    onRemove: onRemovePlayer)
             } label: {
-                HStack {
-                    Label("Players", systemImage: "person.2.fill")
-                    Spacer()
-                    Text(player.label).foregroundStyle(GrownUpsPalette.muted)
-                    Image(systemName: "chevron.right").accessibilityHidden(true)
+                HStack(spacing: 14) {
+                    Image(player.buddy.asset).resizable().scaledToFit().padding(5)
+                        .frame(width: 60, height: 60)
+                        .background(GrownUpsPalette.butter, in: Circle())
+                        .accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(player.label)
+                            .font(.system(.title2, design: .rounded).weight(.bold))
+                            .foregroundStyle(GrownUpsPalette.ink)
+                            .privacySensitive()
+                        Text(players.count > 1 ? "Switch, add or remove a child" : "Add another child")
+                            .font(.subheadline)
+                            .foregroundStyle(GrownUpsPalette.muted)
+                    }
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.right").foregroundStyle(GrownUpsPalette.muted).accessibilityHidden(true)
                 }
-                .font(.headline)
-                .padding(16)
-                .frame(minHeight: 52)
-                .background(.white, in: RoundedRectangle(cornerRadius: 18))
+                .frame(minHeight: 60)
+                .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
             .accessibilityIdentifier("grownups-players")
 
-            if let playerSettings {
-                NavigationLink {
-                    playerSettings()
-                } label: {
-                    Label("Player settings", systemImage: "slider.horizontal.3")
-                        .font(.headline)
-                        .padding(14)
-                        .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
-                        .background(.white, in: RoundedRectangle(cornerRadius: 18))
+            group("\(player.label)’s practice") {
+                NavigationLink { soundPage } label: {
+                    row("Sounds", value: soundValue, lock: assignedSounds.isEmpty ? nil : "lock.fill")
                 }
-                .accessibilityIdentifier("grownups-player-settings")
+                .accessibilityIdentifier("grownups-sounds")
+                if let playerSettings {
+                    divider
+                    NavigationLink { playerSettings() } label: { row("Name, age and word position") }
+                        .accessibilityIdentifier("grownups-player-settings")
+                }
+                divider
+                NavigationLink {
+                    ParentProgressView(selectedSound: displayedSound, snapshot: practice?.parentProgress,
+                                       onSendProgress: onSendProgress)
+                } label: { row("Progress") }
+                .accessibilityIdentifier("grownups-progress")
             }
 
-            if let storefront {
-                NavigationLink {
-                    storefront()
-                } label: {
-                    Label("Sona Premium and Restore Purchases", systemImage: "bag")
-                        .font(.headline)
-                        .padding(14)
-                        .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
-                        .background(.white, in: RoundedRectangle(cornerRadius: 18))
+            group("Family and plan") {
+                if let weeklyReport {
+                    NavigationLink { weeklyReport() } label: { row("Weekly progress report") }
+                        .accessibilityIdentifier("grownups-weekly-report")
+                    divider
                 }
-                .accessibilityIdentifier("grownups-storefront")
+                if let storefront {
+                    NavigationLink { storefront() } label: { row("Sona Premium and Restore Purchases") }
+                        .accessibilityIdentifier("grownups-storefront")
+                    divider
+                }
+                if let familyUsername {
+                    NavigationLink {
+                        FamilyChangePasswordView(onChangePassword: onChangePassword)
+                    } label: { row("Speech therapist login", value: familyUsername) }
+                    .privacySensitive()
+                    .accessibilityIdentifier("grownups-change-password")
+                } else {
+                    Button(action: onFamilyLogin) { row("I have a login from my speech therapist") }
+                        .accessibilityIdentifier("grownups-family-login")
+                }
+                if sharingProgress {
+                    divider
+                    Button(role: .destructive) { showSharingConfirmation = true } label: {
+                        row("Stop sharing with your speech therapist", chevron: false, tint: GrownUpsPalette.danger)
+                    }
+                    .disabled(stoppingSharing)
+                    .accessibilityIdentifier("grownups-stop-sharing")
+                }
+            }
+            if stoppingSharing { ProgressView() }
+            if !sharingStatus.isEmpty {
+                Text(sharingStatus)
+                    .font(.subheadline)
+                    .foregroundStyle(GrownUpsPalette.muted)
             }
 
+            group("More") {
+                NavigationLink { NativeFamilyFeedbackView() } label: { row("Talk to us") }
+                    .accessibilityIdentifier("grownups-feedback")
+                if let movingPhones {
+                    divider
+                    NavigationLink { movingPhones() } label: { row("Moving to a new phone?") }
+                        .accessibilityIdentifier("grownups-backup")
+                }
+                divider
+                Link(destination: URL(string: "https://app.speaksona.com/privacy")!) { row("Privacy", chevron: false, external: true) }
+                divider
+                Link(destination: URL(string: "https://app.speaksona.com/terms")!) { row("Terms", chevron: false, external: true) }
+            }
+        }
+    }
+
+    private var assignedSounds: [String] {
+        homework?.sounds.map { $0.uppercased() }.filter(Self.sounds.contains) ?? []
+    }
+
+    private func spoken(_ sound: String) -> String { sound == "THV" ? "TH (v)" : sound }
+
+    /// What the Sounds row is set to: the homework's sounds, the one sound
+    /// picked for Home, or the family's own list taking turns.
+    private var soundValue: String {
+        if !assignedSounds.isEmpty { return assignedSounds.map(spoken).joined(separator: ", ") }
+        if !targetSound.isEmpty { return spoken(targetSound) }
+        return focusOptions.isEmpty ? "Taking turns" : focusOptions.map(spoken).joined(separator: ", ")
+    }
+
+    /// The sound card that used to sit on the main page, on a page of its own.
+    private var soundPage: some View {
+        ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                Text("Sound on Home")
-                    .font(.system(.title2, design: .rounded).weight(.bold))
-                    .accessibilityAddTraits(.isHeader)
-                let assigned = homework?.sounds.map { $0.uppercased() }.filter(Self.sounds.contains) ?? []
-                if !assigned.isEmpty, let homework {
+                if !assignedSounds.isEmpty, let homework {
                     Label("Set by the speech therapist’s homework", systemImage: "lock.fill")
                         .font(.subheadline)
                         .foregroundStyle(GrownUpsPalette.muted)
-                    Text(assigned.map { $0 == "THV" ? "TH (voiced)" : $0 }.joined(separator: " · "))
+                    Text(assignedSounds.map { $0 == "THV" ? "TH (voiced)" : $0 }.joined(separator: " · "))
                         .font(.headline)
                     if !homework.title.isEmpty {
                         Text(homework.title).privacySensitive()
@@ -273,67 +298,62 @@ struct GrownUpsView: View {
                 }
             }
             .padding(22)
-            .background(.white, in: RoundedRectangle(cornerRadius: 25))
+            .frame(maxWidth: 540, alignment: .leading)
+            .background(.white, in: RoundedRectangle(cornerRadius: 22))
+            .padding(20)
+            .frame(maxWidth: .infinity)
+        }
+        .background(GrownUpsPalette.paper.ignoresSafeArea())
+        .foregroundStyle(GrownUpsPalette.ink)
+        .navigationTitle("Sounds")
+        .navigationBarTitleDisplayMode(.inline)
+    }
 
-            NavigationLink {
-                ParentProgressView(selectedSound: displayedSound, snapshot: practice?.parentProgress,
-                                   onSendProgress: onSendProgress)
-            } label: {
-                HStack(spacing: 14) {
-                    Image(systemName: "chart.bar.xaxis")
-                        .font(.title2)
-                        .padding(12)
-                        .background(.white.opacity(0.75), in: RoundedRectangle(cornerRadius: 15))
-                        .accessibilityHidden(true)
-                    Text("Progress").font(.system(.headline, design: .rounded))
-                    Spacer(minLength: 0)
-                    Image(systemName: "chevron.right").accessibilityHidden(true)
-                }
-                .padding(15)
-                .frame(maxWidth: .infinity, minHeight: 54, alignment: .leading)
-                .background(GrownUpsPalette.mint, in: RoundedRectangle(cornerRadius: 24))
+    private var divider: some View {
+        Rectangle().fill(GrownUpsPalette.line).frame(height: 1).padding(.leading, 16)
+    }
+
+    private func group<Content: View>(_ title: String, @ViewBuilder _ content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title.uppercased())
+                .font(.caption.weight(.bold))
+                .tracking(0.8)
+                .foregroundStyle(GrownUpsPalette.muted)
+                .padding(.leading, 6)
+                .privacySensitive()
+                .accessibilityAddTraits(.isHeader)
+            VStack(spacing: 0) { content() }
+                .background(.white, in: RoundedRectangle(cornerRadius: 18))
+                .overlay { RoundedRectangle(cornerRadius: 18).strokeBorder(GrownUpsPalette.line, lineWidth: 1) }
+        }
+    }
+
+    /// The one row look: what it is on the left, what it is set to on the
+    /// right, an arrow.
+    private func row(_ title: String, value: String? = nil, lock: String? = nil, chevron: Bool = true,
+                     external: Bool = false, tint: Color = GrownUpsPalette.ink) -> some View {
+        HStack(spacing: 10) {
+            Text(title)
+                .font(.body.weight(.medium))
+                .foregroundStyle(tint)
+                .multilineTextAlignment(.leading)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 8)
+            if let lock { Image(systemName: lock).font(.footnote).foregroundStyle(GrownUpsPalette.muted).accessibilityHidden(true) }
+            if let value {
+                Text(value).font(.body).foregroundStyle(GrownUpsPalette.muted).lineLimit(1)
             }
-            .accessibilityIdentifier("grownups-progress")
-
-            if let weeklyReport {
-                NavigationLink { weeklyReport() } label: {
-                    Label("Weekly progress report", systemImage: "envelope")
-                        .font(.headline)
-                        .padding(14)
-                        .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
-                        .background(.white, in: RoundedRectangle(cornerRadius: 18))
-                }
-                .accessibilityIdentifier("grownups-weekly-report")
-            }
-
-            NavigationLink {
-                NativeFamilyFeedbackView()
-            } label: {
-                Label("Talk to us", systemImage: "bubble.left")
-                    .font(.headline)
-                    .padding(14)
-                    .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
-                    .background(.white, in: RoundedRectangle(cornerRadius: 18))
-            }
-            .accessibilityIdentifier("grownups-feedback")
-
-            HStack(spacing: 24) {
-                Link("Privacy", destination: URL(string: "https://app.speaksona.com/privacy")!)
-                Link("Terms", destination: URL(string: "https://app.speaksona.com/terms")!)
-            }
-            .font(.footnote.weight(.semibold))
-
-            if let movingPhones {
-                NavigationLink { movingPhones() } label: {
-                    Label("Moving to a new phone?", systemImage: "arrow.left.arrow.right")
-                        .font(.headline)
-                        .padding(14)
-                        .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
-                        .background(.white, in: RoundedRectangle(cornerRadius: 18))
-                }
-                .accessibilityIdentifier("grownups-backup")
+            if chevron {
+                Image(systemName: "chevron.right").font(.footnote.weight(.semibold))
+                    .foregroundStyle(GrownUpsPalette.muted).accessibilityHidden(true)
+            } else if external {
+                Image(systemName: "arrow.up.right").font(.footnote.weight(.semibold))
+                    .foregroundStyle(GrownUpsPalette.muted).accessibilityHidden(true)
             }
         }
+        .padding(.horizontal, 16)
+        .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
+        .contentShape(Rectangle())
     }
 
     private var soundPicker: some View {
@@ -453,4 +473,6 @@ private enum GrownUpsPalette {
     static let teal = Color(red: 0.067, green: 0.498, blue: 0.518)
     static let mint = Color(red: 0.87, green: 0.94, blue: 0.89)
     static let line = Color(red: 0.88, green: 0.85, blue: 0.81)
+    static let butter = Color(red: 1, green: 0.88, blue: 0.56)
+    static let danger = Color(red: 0.65, green: 0.20, blue: 0.18)
 }

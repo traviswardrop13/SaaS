@@ -3,7 +3,7 @@ import { readSession, liveSession, kvCmd, kvConfigured, randomToken, sendSelfLin
 import { rateLimit } from "@/lib/rateLimit";
 import { readAccount } from "@/lib/roster";
 import {
-  selfStatus, requestAccess, bumpDaily, selfTokenKey, StoreUnavailable,
+  selfStatus, requestAccess, bumpDaily, selfTokenKey, StoreUnavailable, planNames,
   SELF_LINKS_PER_DAY, SELF_TOKEN_TTL, type SelfStatus,
 } from "@/lib/caseload";
 
@@ -16,7 +16,7 @@ import {
  *   POST { action: "request" } → "No work email? Request access" → { ok, requested }
  *
  * WHO (lib/caseload selfStatus). From 12 Nov 2026 a clinician's own Premium
- * comes with Sona Pro; from 29 Sep to 12 Nov 2026 it was "Sona Premium for
+ * comes with Sona Pro (or, from 17 Nov 2026, Sona Clinic); from 29 Sep to 12 Nov 2026 it was "Sona Premium for
  * you", $59.99 a year (still renewing for those who bought it), and this
  * sends a link to anyone
  * whose own Premium is on: paid, grandfathered, or on the older $79.99
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
     if (!self.canRequest) {
       return NextResponse.json({
         ok: false, needPlan: !self.active,
-        error: self.active ? "Your own Premium is already on." : "Premium on your own phone or tablet comes with Sona Pro.",
+        error: self.active ? "Your own Premium is already on." : "Premium on your own phone or tablet comes with " + planNames() + ".",
       }, { status: 409 });
     }
     // Recorded on its own key (slpaccess, a hash), never on the account
@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
         }, { status: 403 })
       : NextResponse.json({
           ok: false, needPlan: true,
-          error: "Premium on your own phone or tablet comes with Sona Pro. Start it on this page, then send yourself a link.",
+          error: "Premium on your own phone or tablet comes with " + planNames() + ". Once it's on, send yourself a link.",
         }, { status: 403 });
   }
 

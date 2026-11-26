@@ -70,7 +70,7 @@ const mustOpen = ["parents.html", "for-slps.html", "slp.html", "slp-login.html",
 ok("the websites, the clinician's dashboard and sign-in, the founder pages, privacy and the lock page stay open",
   mustOpen.every((f) => !L.lockedPage("/" + f)), mustOpen.filter((f) => L.lockedPage("/" + f)));
 ok("every other page on disk is part of the app, and locks", pages.filter((f) => !L.OPEN_PAGES.includes(f)).every((f) => L.lockedPage("/" + f)));
-ok("pictures, scripts, sounds, the API and the root never lock", ["/", "/sona.js", "/assets/crafted/echo-welcome.webp", "/api/lead", "/coach/say-echo/R-sound.wav", "/for-slps", "/slps", "/assets/x/today.html"].every((p) => !L.lockedPage(p)));
+ok("pictures, scripts, sounds, the API and the root never lock", ["/", "/plans", "/sona.js", "/assets/crafted/echo-welcome.webp", "/api/lead", "/coach/say-echo/R-sound.wav", "/for-slps", "/slps", "/assets/x/today.html"].every((p) => !L.lockedPage(p)));
 const { pathToRegexp } = require(path.join(REPO, "node_modules/next/dist/compiled/path-to-regexp"));
 const matcher = (MW.config && MW.config.matcher) || [];
 const hits = (p) => matcher.some((m) => pathToRegexp(m).test(p));

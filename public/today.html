@@ -14,6 +14,12 @@
        Covers deep links and the native shell's start URL alike. -->
   <script>
     (function(){
+      // SESSPLAY1 (17 Nov 2026): a game played in a clinician's session ends
+      // on the dashboard's Session games, never on the family's Home (its ✕,
+      // Back home and end card all come here). sona.js holds the rule; this
+      // runs before it, so the setup check below never sends a session to
+      // setup on the way. Only a record that has not run out counts.
+      try{ var sp=JSON.parse(sessionStorage.getItem("sona.sessplay.v1")||"null"); if(sp&&Number(sp.exp)>Date.now()){ document.documentElement.style.display="none"; location.replace("/slp.html#play"); return; } }catch(e){}
       try{
         // Not before the address move (APPHOST1, sona.js): on app.speaksona.com
         // a phone that hasn't copied its www Sona across yet looks brand new
@@ -553,6 +559,9 @@
         // (only to a child who can open it: a story shown locked tomorrow
         // brings no game, so the line promises only the day)
         var tmr=false;try{tmr=!!(S.storyOpen&&S.storyOpen());}catch(e){tmr=false;}
+        // TALKMORE1: a talking story brings no game of its own (it is its own
+        // replay on Home's row), so tomorrow's promises only the day
+        if(next&&next.story&&next.story.talk)tmr=false;
         var line=done?(next&&next.kind==="story"?"Come back tomorrow for Day "+next.day+(tmr?" and a new game!":"!"):"Come back tomorrow for a new adventure!"):q.line;
         document.getElementById("questTitle").textContent=title;
         document.getElementById("questLine").textContent=line;
