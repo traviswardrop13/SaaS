@@ -288,6 +288,14 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     /<p class="qt">Makes practicing fun!<\/p>/.test(slps) &&
     /<blockquote><p>This app has been so helpful for my 3 year old\. She has improved so much&hellip;<\/p><\/blockquote>/.test(slps) &&
     /<figcaption><b>Lindi<\/b>, parent &middot; App Store review<\/figcaption>/.test(slps));
+  // Travis, 25 Nov 2026: "Let's add the testimonial to the opt-in page too":
+  // the Black Friday opt-in carries the same figure, letter for letter.
+  {
+    const fig = (html) => (html.match(/<figure class="hero-quote" id="heroQuote">[\s\S]*?<\/figure>/) || [""])[0];
+    const bfHtml = readFileSync(APP + "/public/bf.html", "utf8");
+    ok("the Black Friday opt-in carries Lindi's review, the plans page's figure letter for letter",
+      fig(slps) !== "" && fig(bfHtml) === fig(slps) && /<div class="wrap hero hero-q">/.test(bfHtml));
+  }
   const slpLede = (slps.match(/<p class="lede"[^>]*>([\s\S]*?)<\/p>/) || ["", ""])[1];
   // Travis, 14 Nov 2026: a benefit "that is not like the community"; the
   // session-planning line waits until the planner is built.

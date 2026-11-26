@@ -221,7 +221,7 @@
     <h2 id="libraryH"><span class="n">25</span> games. <span class="n" id="bookCount">36</span> picture books.</h2>
     <p class="lib-sub">Games for ages 3 to 8 and picture books read along with Echo. Kids say their sound to play.</p>
   </div>
-  <div class="strip go" aria-label="Sona's games">
+  <div class="strip go" aria-label="Sona's games" data-pace="18">
     <ul class="track">
           <li class="tile g"><img src="/assets/site/games/slice.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Fruit Slice</span></li>
           <li class="tile g"><img src="/assets/site/games/tiles.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Piano Tiles</span></li>
@@ -871,7 +871,12 @@
         function copy(li) { var c = li.cloneNode(true); c.setAttribute("aria-hidden", "true"); t.appendChild(c); }
         while (t.scrollWidth < want && guard++ < 12) items.forEach(copy);
         [].slice.call(t.children).forEach(copy);
-        t.style.setProperty("--dur", Math.round(t.scrollWidth / 2 / 36) + "s");
+        // The speed is pixels a second, so a longer strip loops longer, not
+        // faster. The games go at half the books' pace (Travis, 25 Nov 2026:
+        // "can you have the games going across the screen slower"): the
+        // strip's own data-pace, else 36.
+        var pace = +t.parentNode.getAttribute("data-pace") || 36;
+        t.style.setProperty("--dur", Math.round(t.scrollWidth / 2 / pace) + "s");
         t.parentNode.classList.add("on");
       });
     })();
