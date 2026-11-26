@@ -69,6 +69,14 @@ Native boards use touch and accessible controls. The existing guided practice, S
 
 The previous integrated local snapshot passed 45 Rules, 95 Migration and 14 Backup tests with fictional data. Exact-host removal checks also covered failed-purge retry, persisted origin receipts and interruption after roster replacement but before key deletion. Installed simulator checks cover setup, completed Home, parent routes, read-only books, sibling switching/restart, immediate coin Undo and a local website Restore failure. [The validation record](LOCAL-VALIDATION-2026-11-20.md) separates exact source/module and UI results from physical, live-account and design-review release checks.
 
+## Review changes, 26 Nov 2026 (not yet compiled: build on a Mac first)
+
+Travis asked for the first three fixes from the design review. Written without Xcode, so the first build may need small corrections.
+
+- **Price screen.** It is an offer now: two game pictures and Echo cheering on top, an X for "Not now", a headline that names the child when the family gave a name ("Unlock every game for Milo"), three lines of what Premium gives, the plan rows with the store's price on the right, "Recommended" as a badge only while Monthly is a sure free trial beside another plan, the Today / Day N-1 / Day N steps for a sure free trial of three days or more, and the button "Start practicing!". The one payment row says "Lifetime", "Yours Forever · Billed today". It draws no navigation bar of its own. Every price and free-day count still comes from the store.
+- **Grown-ups.** One page in three groups with one row look: the child (buddy, name, a link to switch, add or remove), then "<Name>'s practice" (Sounds, Name, age and word position, Progress), "Family and plan" (Weekly progress report, Sona Premium and Restore Purchases, the therapist login, Stop sharing while sharing), and "More" (Talk to us, Moving to a new phone?, Privacy, Terms). The sound grid moved to its own Sounds page. Nothing was removed.
+- **Home.** Today's story is first and taller, with a white play button. Under it, Games and Books are painted cards. The Practice bar is gone from Home; Practice keeps its tab. Travis to confirm: the earlier "Pick a game first" order was chosen for live sessions.
+
 ## Therapist login additions
 
 - The first welcome screen adds a dedicated “I have a login from my speech therapist” button. Grown-ups also offers that same path after the adult check.

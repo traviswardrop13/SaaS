@@ -12,9 +12,13 @@ struct NativeStorefrontHost: View {
     private let origin: LegacyOrigin
     private let allowsWebsiteRestore: Bool
     private let reminders: NativeTrialReminderStore?
+    private let headline: String
 
     @MainActor
-    init(records: NativeFamilyState, configuration: FamilyAccessConfiguration, origin: LegacyOrigin, allowsWebsiteRestore: Bool = false, reminders: NativeTrialReminderStore? = nil) {
+    init(records: NativeFamilyState, configuration: FamilyAccessConfiguration, origin: LegacyOrigin, allowsWebsiteRestore: Bool = false, reminders: NativeTrialReminderStore? = nil, childName: String? = nil) {
+        // The offer names the child when the family gave a name; never "Player 2".
+        let name = childName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        self.headline = name.isEmpty ? "Unlock every game" : "Unlock every game for \(name)"
         self.records = records
         self.reminders = reminders
         self.origin = origin
@@ -35,9 +39,9 @@ struct NativeStorefrontHost: View {
     var body: some View {
         Group {
             if let reminders {
-                NativeReminderStorefrontContent(store: store, websiteRestore: allowsWebsiteRestore ? websiteRestore : nil, reminders: reminders)
+                NativeReminderStorefrontContent(store: store, websiteRestore: allowsWebsiteRestore ? websiteRestore : nil, headline: headline, reminders: reminders)
             } else {
-                FamilyStorefrontView(store: store, websiteRestore: allowsWebsiteRestore ? websiteRestore : nil)
+                FamilyStorefrontView(store: store, websiteRestore: allowsWebsiteRestore ? websiteRestore : nil, headline: headline)
             }
         }.onChange(of: records.entitlement(for: origin)) { state in store.updateAccess(state) }
     }
@@ -68,9 +72,10 @@ struct NativeStorefrontHost: View {
 private struct NativeReminderStorefrontContent: View {
     let store: FamilyStorefrontStore
     let websiteRestore: FamilyEmailRestoreStore?
+    let headline: String
     @ObservedObject var reminders: NativeTrialReminderStore
     var body: some View {
-        FamilyStorefrontView(store: store, websiteRestore: websiteRestore,
+        FamilyStorefrontView(store: store, websiteRestore: websiteRestore, headline: headline,
             reminderOn: { reminders.canPromiseTrialReminder(for: $0) })
             .task {
                 _ = await reminders.refreshAuthorization()

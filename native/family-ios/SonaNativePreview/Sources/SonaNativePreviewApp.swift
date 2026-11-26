@@ -836,7 +836,7 @@ struct SonaNativePreviewApp: App {
         guard let origin = records.document?.primaryOrigin,
               let configuration = try? FamilyAccessConfiguration.bundled() else { return nil }
         return {
-            AnyView(NativeStorefrontHost(records: records, configuration: configuration, origin: origin, allowsWebsiteRestore: allowsWebsiteRestore, reminders: trialReminders)
+            AnyView(NativeStorefrontHost(records: records, configuration: configuration, origin: origin, allowsWebsiteRestore: allowsWebsiteRestore, reminders: trialReminders, childName: player.displayName)
                 .id(origin))
         }
     }
