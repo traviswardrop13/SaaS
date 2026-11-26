@@ -273,6 +273,21 @@ reset();
   r = await post(evt("customer.subscription.created", plansSub()));
   ok("while the return page is sending it, the webhook sends nothing and answers 503, so Stripe asks again",
     r.status === 503 && MAILS.length === 0 && K.get("slpbuymail:sub_plans1") === "held-by-the-return-page", r);
+
+  // NO EMAIL ON /plans (26 Nov 2026): the checkout carried none, so the
+  // owner is the Stripe customer's email, stamped before anything else.
+  reset(); K.set("slpplan-pro:new@clinic.org", JSON.stringify({ none: true }));
+  const noOwner = proSub({ id: "sub_noemail1", status: "trialing", customer: "cus_ne1", metadata: { plan: "slp-pro", from: "plans" } });
+  r = await post(evt("customer.subscription.created", noOwner));
+  const stamp = STRIPE.find((x) => x.method === "POST" && x.path === "/v1/subscriptions/sub_noemail1");
+  ok("a /plans start with no email takes the Stripe customer's email as its owner, stamps it, and emails its sign-in link there",
+    r.status === 200 && !!stamp && stamp.body.includes("metadata[slp]=new%40clinic.org") && !stamp.body.includes("metadata[plan]") &&
+    MAILS.length === 1 && JSON.stringify(MAILS[0].to) === JSON.stringify(["new@clinic.org"]) && K.get("slpbuymail:sub_noemail1") === "sent" &&
+    !K.has("slpplan-pro:new@clinic.org"), [r, stamp, MAILS.length]);
+  reset(); stripeDown = true;
+  r = await post(evt("customer.subscription.created", proSub({ id: "sub_noemail2", status: "trialing", customer: "cus_ne2", metadata: { plan: "slp-pro", from: "plans" } })));
+  ok("…and Stripe not answering is a 503, nothing sent", r.status === 503 && MAILS.length === 0 && !K.has("slpbuymail:sub_noemail2"), r);
+  stripeDown = false;
   delete process.env.RESEND_API_KEY;
 }
 

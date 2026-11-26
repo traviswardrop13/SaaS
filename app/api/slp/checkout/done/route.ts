@@ -7,6 +7,7 @@ import { cleanRef } from "@/lib/referral";
 import { linkOrigin } from "@/lib/site";
 import { activateFromSession, PRO_PLAN } from "@/lib/caseload";
 import { plansSignInMail } from "@/lib/plansMail";
+import { claimPlansSub } from "@/lib/plansClaim";
 
 /**
  * BACK FROM STRIPE ON /plans (BUYNOW1, 25 Nov 2026; see /api/slp/checkout).
@@ -59,6 +60,14 @@ export async function POST(req: NextRequest) {
     if ((md.from !== "plans" && md.source !== "plans") || md.plan !== PRO_PLAN) return reply({ ok: false }, 404);
     email = String(md.slp || "").trim().toLowerCase();
     ref = cleanRef(md.ref);
+    // A checkout opened with no email (26 Nov 2026, lib/plansClaim): the
+    // email is the one Stripe's page asked for, stamped on the subscription.
+    if (!email && cs.status === "complete" && cs.subscription) {
+      const sub = typeof cs.subscription === "string" ? await stripe.subscriptions.retrieve(cs.subscription) : cs.subscription;
+      const who = await claimPlansSub(stripe, sub, cs.customer_details && cs.customer_details.email);
+      if (who === undefined) return reply({ ok: false, retry: true }, 502);
+      email = who;
+    }
   } catch {
     return reply({ ok: false, retry: true }, 502);
   }

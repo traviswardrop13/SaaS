@@ -316,11 +316,11 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     // clinician there (Sona Lite's: Sona Premium in the app).
     (slps.match(/apps\.apple\.com/g) || []).length === 1 && /<a class="btn ghost" id="appGo" href="https:\/\/apps\.apple\.com\/[^"]+">Get it on the App Store<\/a>/.test(slps));
   const form = (slps.match(/<form class="signup" id="signup"[\s\S]*?<\/form>/) || [""])[0];
-  ok("one clinician form asks only for a work email (14 Nov 2026: no role, no setting)",
-    /id="fEmail" type="email"[^>]*\brequired\b/.test(form) && (form.match(/<button\b/g) || []).length === 1 &&
-    (form.match(/<input\b/g) || []).length === 1 && !/<select\b/.test(form) && !/<textarea\b/.test(form) &&
-    /placeholder="you@yourclinic\.org"/.test(form) &&
-    !/<option value="(?:parent|other)"/.test(form) &&
+  // No email box since 26 Nov 2026 (Travis: "Remove the email entry on the
+  // checkout page"): the one button opens Stripe, whose page asks for it.
+  ok("the clinician form is one button and nothing to type: Stripe asks for the email",
+    (form.match(/<button\b/g) || []).length === 1 &&
+    !/<input\b/.test(form) && !/<select\b/.test(form) && !/<textarea\b/.test(form) && !/id="fEmail"/.test(slps) &&
     (slps.match(/<form\b/g) || []).length === 1 && !/id="startModal"/.test(slps));
   ok("both clinician calls to action say Start your free trial, and the closing one buys (Stripe) or asks for the email",
     /\$\("finalGo"\)\.onclick = function \(\) \{ buyOrAsk\(PICK \|\| "pro"\); \};/.test(slps) &&

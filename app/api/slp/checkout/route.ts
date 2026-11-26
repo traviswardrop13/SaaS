@@ -16,7 +16,17 @@ import {
  * Black Friday price button, along with Get Sona Pro for $9.99, needs to go
  * to like a Stripe checkout, not the SLP dashboard").
  *
- *   POST /api/slp/checkout { email, ref?, source?, attrib? } → { ok, url }
+ *   POST /api/slp/checkout { email?, ref?, source?, attrib? } → { ok, url }
+ *
+ * NO EMAIL NEEDED (Travis, 26 Nov 2026: "Remove the email entry on the
+ * checkout page"). /plans has no email box now: it sends only an email the
+ * visitor typed at the opt-in in that tab. With none, Stripe's own page asks
+ * for it, and the subscription is stamped with that address once Stripe has
+ * it (lib/plansClaim: /api/slp/checkout/done and Stripe's webhook, whichever
+ * comes first). Without an email nothing can be asked before checkout: the
+ * free trial is given on trust (no Black Friday), and "already on Sona Pro"
+ * is not caught, so a clinician who already pays could buy a second plan.
+ * Both are Travis's trade for the shorter way to pay.
  *
  * A visitor who is NOT signed in types their email on /plans and goes
  * straight to Stripe's checkout for Sona Pro: no sign-in email first, no
@@ -63,18 +73,19 @@ export async function POST(req: NextRequest) {
   // own checkout (/api/slp/plan), which knows the buyer.
   if (body.plan !== undefined && body.plan !== "pro") return reply({ ok: false, unavailable: true, error: "Sign in to your Sona dashboard to buy this plan." }, 409);
   const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
-  if (!email || email.length > 254 || !EMAIL.test(email)) return reply({ ok: false, error: "Enter a valid email." }, 400);
+  if (email && (email.length > 254 || !EMAIL.test(email))) return reply({ ok: false, error: "Enter a valid email." }, 400);
   // One address, a few checkouts an hour: a page left open and pressed
   // again is fine, a script running through addresses is not.
-  try {
+  if (email) try {
     const n = await kvCmd(["EVAL", "local n=redis.call('INCR',KEYS[1]) if n==1 then redis.call('EXPIRE',KEYS[1],3600) end return n", 1, "slpcheckout:" + email]);
     if (typeof n === "number" && n > 6) return reply({ ok: false, error: "Too many tries. Try again in an hour." }, 429);
   } catch { /* the IP limit still holds */ }
 
   const stripe = new Stripe(key);
   let customer = "";
-  let trial = false;
-  try {
+  // With no email the trial is given on trust (see the header).
+  let trial = !email;
+  if (email) try {
     const acct = await readAcct(email);
     // Asked of Stripe afresh (force), as /api/slp/plan does: never a second
     // Sona Pro, and the trial only on Stripe's word that this address never
@@ -129,7 +140,7 @@ export async function POST(req: NextRequest) {
   // (lib/plansMail). A referral code (Share & earn) rides on the checkout
   // and the subscription until that email's sign-in makes the account.
   const ref = cleanRef(body.ref);
-  const metadata: Record<string, string> = { plan: PRO_PLAN, slp: email, from: "plans", ...(bfCoupon ? { offer: BF_OFFER } : {}), ...(ref ? { ref } : {}) };
+  const metadata: Record<string, string> = { plan: PRO_PLAN, ...(email ? { slp: email } : {}), from: "plans", ...(bfCoupon ? { offer: BF_OFFER } : {}), ...(ref ? { ref } : {}) };
   const keeps = "your families keep every game to the end of the month you paid for.";
   const terms = trial
     ? "No charge today. Your free trial lasts " + PRO_TRIAL_DAYS + " days; after that, " + PRO_PRICE + " " + PRO_PER + " until you cancel. Cancel before the trial ends and you pay nothing."
@@ -148,8 +159,9 @@ export async function POST(req: NextRequest) {
       payment_method_collection: "always",
       custom_text: { submit: { message: terms } },
       metadata,
-      ...(customer ? { customer } : { customer_email: email }),
-      client_reference_id: email,
+      // No email: Stripe's page asks for it and makes the customer.
+      ...(customer ? { customer } : email ? { customer_email: email } : {}),
+      ...(email ? { client_reference_id: email } : {}),
       ...(bfCoupon ? { discounts: [{ coupon: bfCoupon }] } : { allow_promotion_codes: true }),
       billing_address_collection: "auto",
       success_url: `${origin}/plans?paid={CHECKOUT_SESSION_ID}#pricing`,
@@ -163,7 +175,7 @@ export async function POST(req: NextRequest) {
 
   // THE LEAD (as the sign-up form's was): the email list hears of a
   // clinician who opened checkout, once a year an address. Never blocks.
-  try {
+  if (email) try {
     if (typeof (await kvCmd(["GET", "slpcrm:" + email])) !== "string") {
       // Always "plans-checkout" (the ad's own tags ride in attrib): /api/lead
       // sends no Black Friday email to a lead with this source, since a buyer
