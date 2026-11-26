@@ -530,13 +530,23 @@ const keepTracks = () => Object.defineProperty(window, "sonaTrack", { configurab
     arrived && posts.length === 1 && posts[0].path === "/api/lead" && posts[0].body.role === "slp" && posts[0].body.source === "fb" &&
     tracked === '["Lead"]' && new URL(page.url()).searchParams.get("utm_campaign") === "launch", { posts, tracked, url: page.url() });
   // Travis: "but no free trial on the promo": the deal's words, charged today.
-  ok("/blackfriday/plans: the bar with the time left, the deal on the Sona Pro card, and its words everywhere: $9.99 for 3 months, charged today, no free trial", await page.evaluate(() =>
-    !document.getElementById("bfBar").hidden && /^Ends in 3d \d\d:\d\d:\d\d$/.test(document.getElementById("bfLeft").textContent) && !document.getElementById("bfDeal").hidden &&
+  ok("/blackfriday/plans: the price bar, the countdown, the deal on the Sona Pro card, and its words everywhere: $9.99 for 3 months, charged today, no free trial", await page.evaluate(() =>
+    !document.getElementById("bfBar").hidden && !document.getElementById("cd").hidden && /^3$/.test(document.getElementById("cdD").textContent) && /^\d\d$/.test(document.getElementById("cdS").textContent) && !document.getElementById("bfDeal").hidden &&
     document.getElementById("fTerms").hidden && !document.getElementById("proWas").hidden &&
     document.querySelector("#planPro .price").innerText.replace(/\s+/g, " ").trim() === "$19.99 a month $9.99 a month" &&
     document.getElementById("proTerms").textContent === "Cancel anytime." &&
     document.getElementById("fGo").textContent === "Get Sona Pro at 50% off" && document.getElementById("finalGo").textContent === "Get Sona Pro at 50% off" &&
     document.getElementById("proGo").textContent === "Get Sona Pro" && !/free trial|days free/i.test(document.getElementById("pricing").querySelector("#planPro").innerText.replace(/no free trial/gi, ""))));
+  // THE OPT-IN'S TOP (Travis, 25 Nov 2026: "this same vibe and copy on the
+  // checkout page too"): the same navy band and the same words as /blackfriday.
+  ok("…and the opt-in's top, word for word: the navy band, its tag, headline, line and end", await page.evaluate(() => {
+    const band = document.querySelector(".hero-band"), t = (id) => document.getElementById(id).innerText.replace(/\s+/g, " ").trim();
+    return band.classList.contains("bf-band") && getComputedStyle(band).backgroundImage.includes("gradient") &&
+      document.getElementById("heroEye").className === "bf-tag" && t("heroEye") === "Black Friday · for SLPs and SLPAs" &&
+      t("heroH") === "Speech practice kids actually want to do." && document.getElementById("heroLede").hidden &&
+      t("bfSub") === "Send it home free to every family on your caseload." && t("bfEnds") === "Ends Sunday, November 29 at 11:59 PM Mountain." &&
+      !/half off/i.test(document.body.innerText);
+  }));
   ok("…with the email already in its box", await page.inputValue("#fEmail") === "bf@clinic.org");
   posts = [];
   await page.evaluate(watchLeaving);
@@ -552,9 +562,11 @@ const keepTracks = () => Object.defineProperty(window, "sonaTrack", { configurab
 {
   const { context, page, errors } = await fresh({ path: "/blackfriday/plans", now: "2026-11-30T06:58:57Z" });
   const before = await page.evaluate(() => !document.getElementById("bfBar").hidden && !document.getElementById("bfDeal").hidden &&
-    document.getElementById("heroEye").innerText.replace(/\s+/g, " ").trim() === "Black Friday · Sona Pro half off");
+    document.getElementById("heroEye").innerText.replace(/\s+/g, " ").trim() === "Black Friday · for SLPs and SLPAs" && !document.getElementById("cd").hidden);
   const after = await settles(page, () => document.getElementById("bfBar").hidden && document.getElementById("bfDeal").hidden &&
-    document.getElementById("heroEye").textContent === "Sona for speech therapists" &&
+    document.getElementById("heroEye").textContent === "Sona for speech therapists" && document.getElementById("heroEye").className === "eyebrow" &&
+    !document.querySelector(".hero-band").classList.contains("bf-band") && document.getElementById("cd").hidden && document.getElementById("bfSub").hidden && document.getElementById("bfEnds").hidden &&
+    document.getElementById("heroH").innerText.replace(/\s+/g, " ").trim() === "Speech homework kids ask for." && !document.getElementById("heroLede").hidden &&
     document.getElementById("fTerms").textContent === "14 days free, then $19.99 a month. Cancel anytime." && !document.getElementById("fTerms").hidden &&
     document.getElementById("proWas").hidden && document.querySelector("#planPro .price b").textContent === "$19.99" &&
     document.getElementById("proTerms").textContent === "Cancel anytime." &&
@@ -707,9 +719,12 @@ if (!PLANS_CLINIC_ON) {
       boxed: kids.every((k) => k.querySelector("img").offsetWidth === 112),
       dir: getComputedStyle(t).animationDirection === (strip.classList.contains("rev") ? "reverse" : "normal") };
   }));
-  const order = await page.evaluate(() => { const l = document.getElementById("library"); return [l.previousElementSibling && l.previousElementSibling.className, l.nextElementSibling && l.nextElementSibling.id]; });
-  ok("/plans: the games and books slide right under the hero, each loop a whole run of tiles, the books the other way", lib.length === 2 && lib.every((s) => s.slides && s.whole && s.boxed && s.dir) &&
-    /hero-band/.test(order[0] || "") && order[1] === "how" && !(await page.evaluate(() => /Home practice is the hard part/.test(document.body.innerText))), [lib, order]);
+  // Light and dark take turns (Travis, 25 Nov 2026: "put the what Sona can
+  // do part ... above the section that has the carousel ... the every other
+  // vibe"): the hero, What you can do, the games and books, the plans.
+  const order = await page.evaluate(() => { const l = document.getElementById("library"), h = document.getElementById("how"); return [h.previousElementSibling && h.previousElementSibling.className, l.previousElementSibling && l.previousElementSibling.id, l.nextElementSibling && l.nextElementSibling.id]; });
+  ok("/plans: What you can do under the hero, then the games and books, each loop a whole run of tiles, the books the other way, then the plans", lib.length === 2 && lib.every((s) => s.slides && s.whole && s.boxed && s.dir) &&
+    /hero-band/.test(order[0] || "") && order[1] === "how" && order[2] === "pricing" && !(await page.evaluate(() => /Home practice is the hard part/.test(document.body.innerText))), [lib, order]);
   await page.hover("#library .strip.rev");
   ok("…and a pointer on a strip pauses it", await page.evaluate(() => getComputedStyle(document.querySelector("#library .strip.rev .track")).animationPlayState === "paused"));
   ok("…and every \"What you can do\" card has its icon", await page.evaluate(() => [].every.call(document.querySelectorAll("#how .workflow-step"), (c) => !!c.querySelector(".w-ico svg")) && document.querySelectorAll("#how .workflow-step").length === 4));

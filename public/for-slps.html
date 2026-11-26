@@ -23,7 +23,7 @@
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Sona for speech therapists — speech homework kids ask for</title>
-  <meta name="description" content="Sona Pro for speech therapists, 14 days free. Play Sona games in your sessions, share the app with clients, and see who practiced at home. Built with Rachel, MS, CF-SLP." />
+  <meta name="description" content="Sona Pro for speech therapists: play Sona games in your sessions, share the app with clients, and see who practiced at home. Built with Rachel, MS, CF-SLP." />
   <!-- THE CLINICIANS' PLANS PAGE (17 Nov 2026, the free packet left out on
        20 Nov 2026). Served at /plans and /checkout (next.config.js); since
        24 Nov 2026 (GHLEXIT1) / is the opt-in (start.html), whose email
@@ -40,14 +40,14 @@
   <meta property="og:site_name" content="Sona" />
   <meta property="og:url" content="https://www.speaksona.com/plans" />
   <meta property="og:title" content="Speech homework kids ask for." />
-  <meta property="og:description" content="Sona Pro for speech therapists: play Sona games in your sessions, share the app with clients, and see who practiced at home. 14 days free." />
+  <meta property="og:description" content="Sona Pro for speech therapists: play Sona games in your sessions, share the app with clients, and see who practiced at home." />
   <meta property="og:image" content="https://speaksona.com/og-slp.png?v=6" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta property="og:image:alt" content="Sona for speech therapists." />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Speech homework kids ask for." />
-  <meta name="twitter:description" content="Sona Pro for speech therapists: play Sona games in your sessions, share the app with clients, and see who practiced at home. 14 days free." />
+  <meta name="twitter:description" content="Sona Pro for speech therapists: play Sona games in your sessions, share the app with clients, and see who practiced at home." />
   <meta name="twitter:image" content="https://speaksona.com/og-slp.png?v=6" />
 
   <!-- The bird with no card behind him. The home-screen icon keeps its
@@ -90,9 +90,10 @@
 
 <main>
 <!-- BLACK FRIDAY (BF1, 24 Nov 2026): shown only in its mode, until the end
-     (the script at the foot says when). -->
+     (the script at the foot says when). The price, said once at the top; the
+     time left is the hero's countdown under it (25 Nov 2026). -->
 <div class="bf-bar" id="bfBar" hidden>
-  <div class="wrap in"><span><b>Black Friday:</b> Sona Pro is $9.99 a month for your first 3 months.</span><span class="cd-inline" id="bfLeft" role="timer"></span></div>
+  <div class="wrap in"><span><b>Black Friday:</b> Sona Pro is $9.99 a month for your first 3 months.</span></div>
 </div>
 <section class="hero-band">
   <div class="wrap hero hero-q">
@@ -102,8 +103,21 @@
          compelling headline", with GoHighLevel's Black Friday page to draw
          on; then "speech homework kids ask for"). The lede under it is
          unchanged ("sub headline is great"). -->
-    <h1>Speech homework kids <span>ask for.</span></h1>
-    <p class="lede">Play Sona games in your sessions, share the app with clients, and see who practiced at home.</p>
+    <h1 id="heroH">Speech homework kids <span>ask for.</span></h1>
+    <p class="lede" id="heroLede">Play Sona games in your sessions, share the app with clients, and see who practiced at home.</p>
+    <!-- THE OPT-IN'S TOP, WORD FOR WORD, THIS WEEK (Travis, 25 Nov 2026: "i
+         want this same vibe and copy on the checkout page too"): while the
+         Black Friday mode is on, the script at the foot turns this band navy
+         and gives it /blackfriday's tag, headline, line, countdown and end
+         (bf.html), then puts the words above back at the end. -->
+    <p class="bf-sub" id="bfSub" hidden>Send it home free to every family on your caseload.</p>
+    <div class="countdown" id="cd" role="timer" aria-label="Time left in the Black Friday deal" hidden>
+      <div><b id="cdD">0</b><span>days</span></div>
+      <div><b id="cdH">00</b><span>hours</span></div>
+      <div><b id="cdM">00</b><span>min</span></div>
+      <div><b id="cdS">00</b><span>sec</span></div>
+    </div>
+    <p class="bf-ends" id="bfEnds" hidden>Ends Sunday, November 29 at 11:59 PM Mountain.</p>
   </div>
 
   <div class="hero-r" aria-hidden="true">
@@ -162,6 +176,36 @@
   </figure>
 
   </div>
+</section>
+
+<!-- WHAT YOU CAN DO, with a little pizzazz (Travis, 25 Nov 2026: "keep what
+     you can do with sona but add a tiny bit of pizazz to it just a little"):
+     a drawn icon in its own soft colour on each card, and a small lift under
+     a pointer (none under Reduce Motion). The words are as they were. -->
+<section class="wrap how" id="how">
+  <h2>What you can do with Sona.</h2>
+  <ul class="workflow">
+    <li class="workflow-step c-teal">
+      <span class="w-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="2.5" y="7" width="19" height="11" rx="5.5"/><path d="M7.5 10.5v4M5.5 12.5h4"/><circle cx="15.5" cy="11.5" r=".6"/><circle cx="17.5" cy="13.5" r=".6"/></svg></span>
+      <h3>Pick Sona games for each session</h3>
+      <p>Choose a sound and an age. Sona picks three of its games, and you play them right on your device, set to that child’s sound.</p>
+    </li>
+    <li class="workflow-step c-butter">
+      <span class="w-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21 3 10 14"/><path d="M21 3 14.5 21l-4.5-7-7-4.5Z"/></svg></span>
+      <h3>Share the app with clients</h3>
+      <p>Email a family a login for the Sona app, or send a link, so parents can set up Sona on their own device.</p>
+    </li>
+    <li class="workflow-step c-coral">
+      <span class="w-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span>
+      <h3>See who practiced at home</h3>
+      <p>Days practiced and words said out loud for every child, with a progress note you can copy.</p>
+    </li>
+    <li class="workflow-step c-mint">
+      <span class="w-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 11 12 4l9 7"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-5h4v5"/></svg></span>
+      <h3>Send homework home</h3>
+      <p>Pick the sound and how many words a day. It’s waiting in the family’s Sona app.</p>
+    </li>
+  </ul>
 </section>
 
 <!-- THE GAMES AND BOOKS (Travis, 25 Nov 2026: "at one point we had a
@@ -246,36 +290,6 @@
           <li class="tile b"><img src="/assets/books/thumb-paint-gift/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>My Thumb Paints a Gift</span></li>
     </ul>
   </div>
-</section>
-
-<!-- WHAT YOU CAN DO, with a little pizzazz (Travis, 25 Nov 2026: "keep what
-     you can do with sona but add a tiny bit of pizazz to it just a little"):
-     a drawn icon in its own soft colour on each card, and a small lift under
-     a pointer (none under Reduce Motion). The words are as they were. -->
-<section class="wrap how" id="how">
-  <h2>What you can do with Sona.</h2>
-  <ul class="workflow">
-    <li class="workflow-step c-teal">
-      <span class="w-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="2.5" y="7" width="19" height="11" rx="5.5"/><path d="M7.5 10.5v4M5.5 12.5h4"/><circle cx="15.5" cy="11.5" r=".6"/><circle cx="17.5" cy="13.5" r=".6"/></svg></span>
-      <h3>Pick Sona games for each session</h3>
-      <p>Choose a sound and an age. Sona picks three of its games, and you play them right on your device, set to that child’s sound.</p>
-    </li>
-    <li class="workflow-step c-butter">
-      <span class="w-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21 3 10 14"/><path d="M21 3 14.5 21l-4.5-7-7-4.5Z"/></svg></span>
-      <h3>Share the app with clients</h3>
-      <p>Email a family a login for the Sona app, or send a link, so parents can set up Sona on their own device.</p>
-    </li>
-    <li class="workflow-step c-coral">
-      <span class="w-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span>
-      <h3>See who practiced at home</h3>
-      <p>Days practiced and words said out loud for every child, with a progress note you can copy.</p>
-    </li>
-    <li class="workflow-step c-mint">
-      <span class="w-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 11 12 4l9 7"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-5h4v5"/></svg></span>
-      <h3>Send homework home</h3>
-      <p>Pick the sound and how many words a day. It’s waiting in the family’s Sona app.</p>
-    </li>
-  </ul>
 </section>
 
 <!-- THE PLANS (Travis, 17 Nov 2026). The figures are typed here because a
@@ -550,16 +564,31 @@
     function bfTick() {
       var left = BF_ENDS_AT - Date.now();
       if (left <= 0) { bfEnd(); return; }
-      var s = Math.floor(left / 1000), d = Math.floor(s / 86400);
+      var s = Math.floor(left / 1000);
       var two = function (n) { return (n < 10 ? "0" : "") + n; };
-      $("bfLeft").textContent = "Ends in " + (d ? d + "d " : "") + two(Math.floor((s % 86400) / 3600)) + ":" + two(Math.floor((s % 3600) / 60)) + ":" + two(s % 60);
+      $("cdD").textContent = String(Math.floor(s / 86400));
+      $("cdH").textContent = two(Math.floor((s % 86400) / 3600));
+      $("cdM").textContent = two(Math.floor((s % 3600) / 60));
+      $("cdS").textContent = two(s % 60);
+    }
+    // THE OPT-IN'S TOP (Travis, 25 Nov 2026: "this same vibe and copy on the
+    // checkout page too"): bf.html's navy band and its words, the ordinary
+    // ones kept to put back.
+    var heroBand = document.querySelector(".hero-band");
+    var heroWas = { eye: $("heroEye").className, h: $("heroH").innerHTML };
+    function bfHero(on) {
+      heroBand.classList.toggle("bf-band", on);
+      $("heroEye").className = on ? "bf-tag" : heroWas.eye;
+      $("heroEye").textContent = on ? "Black Friday \u00b7 for SLPs and SLPAs" : "Sona for speech therapists";
+      if (on) $("heroH").textContent = "Speech practice kids actually want to do."; else $("heroH").innerHTML = heroWas.h;
+      $("heroLede").hidden = on; $("bfSub").hidden = !on; $("cd").hidden = !on; $("bfEnds").hidden = !on;
     }
     // The page's own words, kept to put back at the end.
     function bfWords() { return { label: LABEL, f: $("fTerms").textContent, pro: $("proGo").textContent, fin: $("finalGo").textContent }; }
     function bfEnd() {
       if (bfTimer) { clearInterval(bfTimer); bfTimer = 0; }
       BF = false;
-      $("heroEye").textContent = "Sona for speech therapists";
+      bfHero(false);
       $("bfBar").hidden = true; $("bfDeal").hidden = true; $("proWas").hidden = true; $("fTerms").hidden = false;
       proPrice.textContent = "$19.99";
       if (bfWas) {
@@ -573,8 +602,7 @@
       LABEL = BF_LABEL; $("fGo").textContent = BF_LABEL; $("finalGo").textContent = BF_LABEL; $("proGo").textContent = "Get Sona Pro";
       $("fTerms").hidden = true; $("proWas").hidden = false; proPrice.textContent = "$9.99";
       $("bfBar").hidden = false; $("bfDeal").hidden = false;
-      // GoHighLevel's way (Travis, 25 Nov 2026): the deal named over the headline.
-      $("heroEye").innerHTML = "Black Friday &middot; <span>Sona Pro half off</span>";
+      bfHero(true);
       bfTick(); bfTimer = setInterval(bfTick, 1000);
     }
 
