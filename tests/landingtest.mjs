@@ -521,6 +521,12 @@ const keepTracks = () => Object.defineProperty(window, "sonaTrack", { configurab
   ok("…the headline, no price, Get Started, and no plans on the page", await page.evaluate(() =>
     /Speech practice kids actually want to do\./.test(document.body.innerText) && !/half off/i.test(document.body.innerText) && !/\$\d/.test(document.body.innerText) && /Ends Sunday, November 29 at 11:59 PM Mountain\./.test(document.body.innerText) &&
     document.getElementById("oGo").textContent.trim() === "Get Started" && !document.getElementById("pricing")));
+  // Travis, 25 Nov 2026: "Let's add the testimonial to the opt-in page too".
+  ok("…and Lindi's review, under Get Started, with the button still on the first screen", await page.evaluate(() => {
+    const q = document.getElementById("heroQuote"), b = document.getElementById("oGo").getBoundingClientRect();
+    return !!q && q.offsetHeight > 0 && /^Makes practicing fun!/.test(q.querySelector(".qt").textContent) &&
+      q.getBoundingClientRect().top >= b.bottom && b.bottom <= window.innerHeight;
+  }));
   posts = []; leadReply = { ok: true, captured: true };
   await page.fill("#oEmail", "bf@clinic.org");
   const went = page.waitForURL((u) => u.pathname === "/blackfriday/plans", { timeout: 5000 }).then(() => true, () => false);
@@ -531,13 +537,23 @@ const keepTracks = () => Object.defineProperty(window, "sonaTrack", { configurab
     arrived && posts.length === 1 && posts[0].path === "/api/lead" && posts[0].body.role === "slp" && posts[0].body.source === "fb" &&
     tracked === '["Lead"]' && new URL(page.url()).searchParams.get("utm_campaign") === "launch", { posts, tracked, url: page.url() });
   // Travis: "but no free trial on the promo": the deal's words, charged today.
-  ok("/blackfriday/plans: the bar with the time left, the deal on the Sona Pro card, and its words everywhere: $9.99 for 3 months, charged today, no free trial", await page.evaluate(() =>
-    !document.getElementById("bfBar").hidden && /^Ends in 3d \d\d:\d\d:\d\d$/.test(document.getElementById("bfLeft").textContent) && !document.getElementById("bfDeal").hidden &&
+  ok("/blackfriday/plans: the price bar, the countdown, the deal on the Sona Pro card, and its words everywhere: $9.99 for 3 months, charged today, no free trial", await page.evaluate(() =>
+    !document.getElementById("bfBar").hidden && !document.getElementById("cd").hidden && /^3$/.test(document.getElementById("cdD").textContent) && /^\d\d$/.test(document.getElementById("cdS").textContent) && !document.getElementById("bfDeal").hidden &&
     document.getElementById("fTerms").hidden && !document.getElementById("proWas").hidden &&
     document.querySelector("#planPro .price").innerText.replace(/\s+/g, " ").trim() === "$19.99 a month $9.99 a month" &&
     document.getElementById("proTerms").textContent === "Cancel anytime." &&
     document.getElementById("fGo").textContent === "Get Sona Pro at 50% off" && document.getElementById("finalGo").textContent === "Get Sona Pro at 50% off" &&
     document.getElementById("proGo").textContent === "Get Sona Pro" && !/free trial|days free/i.test(document.getElementById("pricing").querySelector("#planPro").innerText.replace(/no free trial/gi, ""))));
+  // THE OPT-IN'S TOP (Travis, 25 Nov 2026: "this same vibe and copy on the
+  // checkout page too"): the same navy band and the same words as /blackfriday.
+  ok("…and the opt-in's top, word for word: the navy band, its tag, headline, line and end", await page.evaluate(() => {
+    const band = document.querySelector(".hero-band"), t = (id) => document.getElementById(id).innerText.replace(/\s+/g, " ").trim();
+    return band.classList.contains("bf-band") && getComputedStyle(band).backgroundImage.includes("gradient") &&
+      document.getElementById("heroEye").className === "bf-tag" && t("heroEye") === "Black Friday · for SLPs and SLPAs" &&
+      t("heroH") === "Speech practice kids actually want to do." && document.getElementById("heroLede").hidden &&
+      t("bfSub") === "Send it home free to every family on your caseload." && t("bfEnds") === "Ends Sunday, November 29 at 11:59 PM Mountain." &&
+      !/half off/i.test(document.body.innerText);
+  }));
   ok("…with no email box, the email waiting in this tab", (await page.$("#fEmail")) === null &&
     (await page.evaluate(() => sessionStorage.getItem("sona.optin.email"))) === "bf@clinic.org");
   posts = [];
@@ -554,9 +570,11 @@ const keepTracks = () => Object.defineProperty(window, "sonaTrack", { configurab
 {
   const { context, page, errors } = await fresh({ path: "/blackfriday/plans", now: "2026-11-30T06:58:57Z" });
   const before = await page.evaluate(() => !document.getElementById("bfBar").hidden && !document.getElementById("bfDeal").hidden &&
-    document.getElementById("heroEye").innerText.replace(/\s+/g, " ").trim() === "Black Friday · Sona Pro half off");
+    document.getElementById("heroEye").innerText.replace(/\s+/g, " ").trim() === "Black Friday · for SLPs and SLPAs" && !document.getElementById("cd").hidden);
   const after = await settles(page, () => document.getElementById("bfBar").hidden && document.getElementById("bfDeal").hidden &&
-    document.getElementById("heroEye").textContent === "Sona for speech therapists" &&
+    document.getElementById("heroEye").textContent === "Sona for speech therapists" && document.getElementById("heroEye").className === "eyebrow" &&
+    !document.querySelector(".hero-band").classList.contains("bf-band") && document.getElementById("cd").hidden && document.getElementById("bfSub").hidden && document.getElementById("bfEnds").hidden &&
+    document.getElementById("heroH").innerText.replace(/\s+/g, " ").trim() === "Speech homework kids ask for." && !document.getElementById("heroLede").hidden &&
     document.getElementById("fTerms").textContent === "14 days free, then $19.99 a month. Cancel anytime." && !document.getElementById("fTerms").hidden &&
     document.getElementById("proWas").hidden && document.querySelector("#planPro .price b").textContent === "$19.99" &&
     document.getElementById("proTerms").textContent === "Cancel anytime." &&
@@ -697,11 +715,22 @@ if (!PLANS_CLINIC_ON) {
     const t = strip.querySelector(".track"), kids = [].slice.call(t.children);
     return { slides: getComputedStyle(t).animationName === "lib-slide", whole: kids[kids.length / 2].offsetLeft - kids[0].offsetLeft === t.scrollWidth / 2,
       boxed: kids.every((k) => k.querySelector("img").offsetWidth === 112),
-      dir: getComputedStyle(t).animationDirection === (strip.classList.contains("rev") ? "reverse" : "normal") };
+      dir: getComputedStyle(t).animationDirection === (strip.classList.contains("rev") ? "reverse" : "normal"),
+      // Pixels a second, not seconds a loop: the two strips are different
+      // lengths, so only the speed says which is slower.
+      label: strip.getAttribute("aria-label"), pace: t.scrollWidth / 2 / parseFloat(getComputedStyle(t).animationDuration) };
   }));
-  const order = await page.evaluate(() => { const l = document.getElementById("library"); return [l.previousElementSibling && l.previousElementSibling.className, l.nextElementSibling && l.nextElementSibling.id]; });
-  ok("/plans: the games and books slide right under the hero, each loop a whole run of tiles, the books the other way", lib.length === 2 && lib.every((s) => s.slides && s.whole && s.boxed && s.dir) &&
-    /hero-band/.test(order[0] || "") && order[1] === "how" && !(await page.evaluate(() => /Home practice is the hard part/.test(document.body.innerText))), [lib, order]);
+  // The games slide at half the books' pace (Travis, 25 Nov 2026: "can you
+  // have the games going across the screeen slower"): 18 px a second, 36.
+  const paceOf = (label) => (lib.find((s) => s.label === label) || {}).pace;
+  ok("/plans: the games slide at half the books' pace, 18 px a second to their 36",
+    Math.abs(paceOf("Sona's games") - 18) < 1 && Math.abs(paceOf("Sona's picture books") - 36) < 1, lib.map((s) => [s.label, s.pace]));
+  // Light and dark take turns (Travis, 25 Nov 2026: "put the what Sona can
+  // do part ... above the section that has the carousel ... the every other
+  // vibe"): the hero, What you can do, the games and books, the plans.
+  const order = await page.evaluate(() => { const l = document.getElementById("library"), h = document.getElementById("how"); return [h.previousElementSibling && h.previousElementSibling.className, l.previousElementSibling && l.previousElementSibling.id, l.nextElementSibling && l.nextElementSibling.id]; });
+  ok("/plans: What you can do under the hero, then the games and books, each loop a whole run of tiles, the books the other way, then the plans", lib.length === 2 && lib.every((s) => s.slides && s.whole && s.boxed && s.dir) &&
+    /hero-band/.test(order[0] || "") && order[1] === "how" && order[2] === "pricing" && !(await page.evaluate(() => /Home practice is the hard part/.test(document.body.innerText))), [lib, order]);
   await page.hover("#library .strip.rev");
   ok("…and a pointer on a strip pauses it", await page.evaluate(() => getComputedStyle(document.querySelector("#library .strip.rev .track")).animationPlayState === "paused"));
   ok("…and every \"What you can do\" card has its icon", await page.evaluate(() => [].every.call(document.querySelectorAll("#how .workflow-step"), (c) => !!c.querySelector(".w-ico svg")) && document.querySelectorAll("#how .workflow-step").length === 4));
@@ -873,6 +902,20 @@ const sentSays = (page) => page.evaluate(() => ({
   ok("…the server is asked, once, for that checkout", doneAsks().length === 1 && doneAsks()[0].body.session === "cs_test_a1b2c3d4e5f6g7", posts);
   ok("…the checkout's id leaves the address, and no button is offered", !/paid=|cs_test/.test(page.url()) && !(await sentSays(page)).again, page.url());
   ok("…and Meta hears one Purchase (a charge today)", JSON.stringify(await page.evaluate(() => window.__track)) === '["Purchase"]', await page.evaluate(() => window.__track));
+  ok("…no page errors", errors.length === 0, errors);
+  await context.close();
+}
+{
+  // The same return during Black Friday, when the box sits on the navy band
+  // (Greptile on #324): its heading must stay dark on the box's cream.
+  posts = []; doneQueue = []; doneReply = { ok: true, activated: true, sent: true };
+  const { context, page, errors } = await fresh({ path: "/blackfriday/plans", query: "&paid=cs_test_a1b2c3d4e5f6g7", init: quickRetry, now: "2026-11-26T19:00:00Z" });
+  await settles(page, () => /You're in!/.test(document.getElementById("sentT").textContent));
+  const ink = await page.evaluate(() => {
+    const lum = (c) => { const [r, g, b] = c.match(/\d+/g).map(Number); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+    return { band: document.querySelector(".hero-band").classList.contains("bf-band"), t: lum(getComputedStyle(document.getElementById("sentT")).color), box: lum(getComputedStyle(document.getElementById("sent")).backgroundColor) };
+  });
+  ok("…and during Black Friday, on the navy band, \"You're in!\" is dark on its cream box", ink.band && ink.box > 200 && ink.t < 90, ink);
   ok("…no page errors", errors.length === 0, errors);
   await context.close();
 }

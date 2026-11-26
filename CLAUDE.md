@@ -3162,6 +3162,12 @@ months** and **Mountain time**, then "but no free trial on the promo".
   ...". If Stripe will not give the coupon, the checkout is the ordinary
   one (the trial, for whoever still has it), in its ordinary words. Never
   Sona Clinic. `caseloadtest` plays it, the clock moved by hand.
+  **The coupon's name is at most 40 characters** (Stripe's limit). Until
+  the evening of 25 Nov 2026 it was 41 ("Black Friday: Sona Pro $9.99 for
+  3 months"), Stripe refused to make it, and every Black Friday checkout
+  showed "14 days free" and the code box instead (Travis: "i also dont want
+  it to show 14 days free"). It is "Black Friday: $9.99 for 3 months";
+  caseloadtest's fake Stripe refuses a longer name as Stripe does.
 - **`/blackfriday` is `public/bf.html`**: the opt-in in navy and butter,
   "Speech practice kids actually want to do." and under it "Send it home
   free to every family on your caseload." (Travis, 25 Nov 2026: in place of
@@ -3293,8 +3299,7 @@ in", TRIALGO1's `sona.slp.wantplan` from /plans, the trial form's email).
   (title, share card `og-slp.png?v=6`, which the opt-in pages share), the
   hero button the form's width in capitals (`#signup .btn`, /plans only:
   Travis, "I didn't want to change the opt-in page", so `/` and
-  `/blackfriday` keep their plain "Get Started"), Black Friday's eyebrow
-  "Black Friday · Sona Pro half off", the hero and closing buttons "Get Sona
+  `/blackfriday` keep their plain "Get Started"), the hero and closing buttons "Get Sona
   Pro at 50% off" and the card's "Get Sona Pro", Lindi's App Store review
   beside the hero (a real review only: her title and her first words, cut
   at "…" to two lines, "Lindi, parent · App Store review"), the Sona Pro
@@ -3316,8 +3321,8 @@ in", TRIALGO1's `sona.slp.wantplan` from /plans, the trial form's email).
   their free dashboard at all is a separate call, not made.
 - **The games and books carousel (Travis, 25 Nov 2026: "replace the home
   practice is the hard part section with the carousel and keep what you can
-  do with sona but add a tiny bit of pizazz")**: `#library`, right under
-  the hero on the page's ink, is the parent page's two sliding strips tile
+  do with sona but add a tiny bit of pizazz")**: `#library`, under "What you
+  can do" (below) on the page's ink, is the parent page's two sliding strips tile
   for tile with its counts ("25 games. 36 picture books."; `shiptest` holds
   them equal to parents.html's, so a game or book added there must be added
   here), looped by the same script (still under Reduce Motion). Its tiles
@@ -3327,6 +3332,24 @@ in", TRIALGO1's `sona.slp.wantplan` from /plans, the trial form's email).
   can do with Sona." keeps its words and gains a drawn icon in a soft colour
   on each card, a thin line of that colour across its top and a small lift
   under a pointer.
+- **/plans wears the opt-in's top while Black Friday lasts** (Travis, 25 Nov
+  2026, with the two pages side by side: "i want this same vibe and copy on
+  the checkout page too"). Until the end, `bfHero(true)` turns the hero band
+  navy (bf.html's `bf-band`) and gives it /blackfriday's words letter for
+  letter: the pill "Black Friday · for SLPs and SLPAs", "Speech practice
+  kids actually want to do.", "Send it home free to every family on your
+  caseload.", the days/hours/min/sec countdown and "Ends Sunday, November
+  29 at 11:59 PM Mountain." (`shiptest` holds them to bf.html's). The price
+  bar above it keeps its line and lost its own small timer (one countdown).
+  The button turns butter there, as the opt-in's does. At the end, on an
+  open page, the cream hero and its own words come back ("Speech homework
+  kids ask for."). Its eyebrow had said "Sona Pro half off" until that
+  evening's funnel check (every other step says "50% off"), and its search
+  and share text no longer says "14 days free", untrue this week.
+- **Light and dark take turns** (the same evening: "put the what Sona can do
+  part ... above the section that has the carousel ... just to like have the
+  every other vibe going"): the hero, "What you can do with Sona." (cream),
+  the games and books (ink), the plans (cream).
 `caseloadtest`, `landingtest`, `shiptest`, `slpapi`, `telemetrytest` play it.
 
 ## The app lives at app.speaksona.com (APPHOST1, 17 Nov 2026)
