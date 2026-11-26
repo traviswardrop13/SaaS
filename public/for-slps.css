@@ -353,7 +353,6 @@ a.btn { text-decoration: none; }
 .bf-bar { background: var(--ink); color: #fff7df; }
 .bf-bar .in { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 14px; padding-block: 10px; font-size: 15px; font-weight: 800; text-align: center; }
 .bf-bar b { color: var(--butter); }
-.bf-bar .cd-inline { padding: 2px 11px; border-radius: 99px; background: #ffffff1f; font-variant-numeric: tabular-nums; }
 .plan .bf-deal { padding: 10px 12px; border-radius: 12px; background: var(--mint); color: var(--ink); font-size: 14px; font-weight: 800; }
 .plan .bf-deal b { color: var(--teal-deep); }
 /* Two lines: the deal, then when it ends (Travis, 25 Nov 2026) */
@@ -374,6 +373,11 @@ a.btn { text-decoration: none; }
 .bf-band .btn { background: var(--butter); color: var(--ink); box-shadow: 0 4px 0 #c99641; }
 .bf-band .btn:hover { background: #ffedbb; }
 .bf-band .hero-halo { background: radial-gradient(circle, #ffdf7455 15%, #ffe79c33 50%, transparent 72%); }
+/* /plans in its Black Friday mode wears the same band (25 Nov 2026): its
+   Rachel line reads light on the navy; Lindi's card keeps its mint. */
+.bf-band .trust { color: #f3ecd9; }
+/* the cream box a buyer sees back from Stripe keeps its dark words (#324) */
+.bf-band .sent { color: var(--ink); }
 
 @media (max-width: 850px) {
   .plans:has(> .plan:nth-child(3)) { grid-template-columns: minmax(0, 1fr); }

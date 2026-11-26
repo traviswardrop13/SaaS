@@ -288,7 +288,7 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     /<p class="qt">Makes practicing fun!<\/p>/.test(slps) &&
     /<blockquote><p>This app has been so helpful for my 3 year old\. She has improved so much&hellip;<\/p><\/blockquote>/.test(slps) &&
     /<figcaption><b>Lindi<\/b>, parent &middot; App Store review<\/figcaption>/.test(slps));
-  const slpLede = (slps.match(/<p class="lede">([\s\S]*?)<\/p>/) || ["", ""])[1];
+  const slpLede = (slps.match(/<p class="lede"[^>]*>([\s\S]*?)<\/p>/) || ["", ""])[1];
   // Travis, 14 Nov 2026: a benefit "that is not like the community"; the
   // session-planning line waits until the planner is built.
   // Travis, 14 Nov 2026: "auto plan lessons", not "draft homework with AI".
@@ -556,6 +556,20 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
       bfShown.includes("Speech practice kids actually want to do. Send it home free to every family on your caseload.") && !/half off/i.test(bfPage) &&
       bfShown.includes("Ends Sunday, November 29 at 11:59 PM Mountain.") && !/\$\d/.test(bfShown) &&
       !/free trial|days free|email you about/i.test(bfShown) && bfShown.includes("Unsubscribe anytime."), bfShown.slice(0, 300));
+    // One word for the deal across the funnel (Travis, 25 Nov 2026: the
+    // emails, the buttons and the checkout say "50% off"), and a share card
+    // that never promises free days the deal does not give.
+    const descs = (slps.match(/<meta (?:name|property)="(?:description|og:description|twitter:description)" content="[^"]*"/g) || []);
+    ok("/plans never says \"half off\" (every step says \"50% off\"), and its share text promises no free days",
+      !/half off/i.test(slps) && descs.length === 3 && descs.every((d) => !/days free|free trial/i.test(d)), descs.join(" | "));
+    // THE OPT-IN'S TOP ON /plans (Travis, 25 Nov 2026: "this same vibe and
+    // copy on the checkout page too"): the words are bf.html's, letter for letter.
+    const bfWord = (re, t) => (re.exec(t) || [])[1];
+    ok("/plans' Black Friday top uses the opt-in's exact tag, headline, line and end",
+      /"Black Friday \\u00b7 for SLPs and SLPAs"/.test(slps) && bfWord(/id="bfTag">([^<]+)</, bfPage) === "Black Friday · for SLPs and SLPAs" &&
+      slps.includes('$("heroH").textContent = "' + bfWord(/id="bfH">([^<]+)</, bfPage) + '"') &&
+      bfWord(/id="bfSub"[^>]*>([^<]+)</, slps) === bfWord(/id="bfSub">([^<]+)</, bfPage) &&
+      bfWord(/id="bfEnds"[^>]*>([^<]+)</, slps) === bfWord(/id="bfEnds">([^<]+)</, bfPage));
     ok("…after the end it says so, with no price, and its box leads to the ordinary plans",
       /\$\("bfH"\)\.textContent = "Black Friday is over\.";/.test(bfPage) && !/\$\("bfSub"\)\.textContent/.test(bfPage) &&
       /location\.assign\(\(bf \? "\/blackfriday\/plans" : "\/plans"\) \+ location\.search\)/.test(bfPage));
