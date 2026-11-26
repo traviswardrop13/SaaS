@@ -174,6 +174,12 @@ const client = {
   } },
   subscriptions: {
     retrieve: async (id) => { S.calls.push(["subscriptions.retrieve", id]); need(); const s = S.subs.get(id); if (!s) throw stripeErr("No such subscription", "resource_missing"); return s; },
+    // Stripe merges metadata keys on update.
+    update: async (id, p) => {
+      S.calls.push(["subscriptions.update", id, p]); need(); const s = S.subs.get(id); if (!s) throw stripeErr("No such subscription", "resource_missing");
+      if (p && p.metadata) s.metadata = { ...(s.metadata || {}), ...p.metadata };
+      return s;
+    },
     search: async ({ query }) => {
       S.calls.push(["subscriptions.search", query]); need();
       const m = /metadata\['slp'\]:'([^']*)'/.exec(query);
@@ -2851,6 +2857,33 @@ const count = (pred) => S.calls.filter(pred).length;
   ok("after Black Friday: the 14-day free trial, card up front, the code box back, its words beside the button",
     r.status === 200 && p && p.subscription_data.trial_period_days === 14 && p.payment_method_collection === "always" && !p.discounts && p.allow_promotion_codes === true &&
     p.custom_text.submit.message === "No charge today. Your free trial lasts 14 days; after that, $19.99 a month until you cancel. Cancel before the trial ends and you pay nothing.", JSON.stringify(p));
+
+  // NO EMAIL (Travis, 26 Nov 2026: "Remove the email entry on the checkout
+  // page"): /plans opens Stripe without one, and Stripe's page asks for it.
+  S.calls.length = 0; OUT.length = 0;
+  r = await call(R.buy, "POST", "/api/slp/checkout", { body: { plan: "pro", source: "fb" } });
+  p = (S.calls.find((c) => c[0] === "checkout.sessions.create") || [])[1];
+  ok("no email: the checkout still opens, with no email for Stripe to fill (its page asks), no owner yet, the trial given on trust, no lead",
+    r.status === 200 && r.json.ok === true && !!r.json.url && p && !("customer_email" in p) && !("customer" in p) && !("client_reference_id" in p) &&
+    JSON.stringify(p.subscription_data.metadata) === JSON.stringify({ plan: "slp-pro", from: "plans" }) && p.subscription_data.trial_period_days === 14 &&
+    !OUT.some((o) => o.url.endsWith("/api/lead")), JSON.stringify([r.json, p]));
+  const ne = "noemailbuyer@brightsteps.example";
+  mkSub("sub_ne_pro", { plan: "slp-pro", status: "trialing", interval: "month" });
+  S.subs.get("sub_ne_pro").metadata.from = "plans";
+  S.sessions.set("cs_test_noemailpaid001", { id: "cs_test_noemailpaid001", status: "complete", metadata: { plan: "slp-pro", from: "plans" },
+    customer_details: { email: " NoEmailBuyer@BrightSteps.example " }, subscription: "sub_ne_pro" });
+  RESEND.sent.length = 0;
+  r = await call(R.buyDone, "POST", "/api/slp/checkout/done", { body: { session: "cs_test_noemailpaid001" } });
+  ok("…and back from Stripe the email its page asked for becomes the owner: stamped on the subscription, the plan stored, ONE sign-in email",
+    r.status === 200 && r.json.activated === true && r.json.sent === true && r.json.trial === true &&
+    S.subs.get("sub_ne_pro").metadata.slp === ne && S.subs.get("sub_ne_pro").metadata.from === "plans" && (storedPro(ne) || {}).sub === "sub_ne_pro" &&
+    RESEND.sent.length === 1 && JSON.stringify(RESEND.sent[0].to) === JSON.stringify([ne]), JSON.stringify([r.json, S.subs.get("sub_ne_pro").metadata]));
+  const stamps = count((c) => c[0] === "subscriptions.update" && c[1] === "sub_ne_pro");
+  r = await call(R.buyDone, "POST", "/api/slp/checkout/done", { body: { session: "cs_test_noemailpaid001" } });
+  ok("…a reload stamps nothing again and sends no second email", r.json.sent === true && RESEND.sent.length === 1 &&
+    count((c) => c[0] === "subscriptions.update" && c[1] === "sub_ne_pro") === stamps, JSON.stringify(r.json));
+  // (its sign-in link is not the one the checks below read)
+  for (const k of [...KV.K.keys()]) if (k.startsWith("slptok:")) KV.K.delete(k);
 
   // the paid return: the plan stored, ONE sign-in email, with the referral riding the sign-up
   mkSub("sub_nb_pro", { slp: nb, plan: "slp-pro", status: "active", interval: "month" });

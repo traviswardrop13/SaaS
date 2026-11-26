@@ -132,10 +132,10 @@
 
   <div class="hero-l">
     <form class="signup" id="signup" novalidate>
-      <div class="form-field" id="fField">
-        <label for="fEmail">Your work email</label>
-        <input id="fEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@yourclinic.org" required />
-      </div>
+      <!-- NO EMAIL BOX (Travis, 26 Nov 2026: "Remove the email entry on the
+           checkout page"): the button opens Stripe, whose page asks for the
+           email. An email typed at the opt-in in this tab still rides along
+           (sessionStorage), so Stripe's box comes filled in. -->
       <!-- THE TRIAL, NOT A FREE DASHBOARD (SLPPRO1, 17 Nov 2026, Travis: "i
            want this to be sona pro tho. this is what they access when they
            create a free trial"). The price and the days are lib/caseload's
@@ -619,7 +619,7 @@
     function toForm() {
       var target = $("sent").hidden ? $("signup") : $("sent");
       target.scrollIntoView({ behavior: "smooth", block: "center" });
-      if ($("sent").hidden) setTimeout(function () { try { $("fEmail").focus({ preventScroll: true }); } catch (e) { $("fEmail").focus(); } }, 450);
+      if ($("sent").hidden) setTimeout(function () { try { $("fGo").focus({ preventScroll: true }); } catch (e) { $("fGo").focus(); } }, 450);
     }
     $("finalGo").onclick = function () { buyOrAsk(PICK || "pro"); };
 
@@ -651,9 +651,9 @@
      * link to it.
      *  - Signed in: /api/slp/plan, the dashboard's own checkout; Cancel comes
      *    back here (`back: "plans"`), Stripe's success goes to the dashboard.
-     *  - Not signed in: the email box, then /api/slp/checkout and Stripe at
-     *    once. An email already in the box (typed at the opt-in) goes
-     *    straight on. Once Stripe says it is paid, /plans?paid=… asks
+     *  - Not signed in: /api/slp/checkout and Stripe at once, with no email
+     *    box (26 Nov 2026): Stripe's page asks for it. An email typed at the
+     *    opt-in in this tab rides along. Once Stripe says it is paid, /plans?paid=… asks
      *    /api/slp/checkout/done to email the sign-in link to the dashboard.
      * The Pixel's event (the Lead, or InitiateCheckout after the opt-in's
      * Lead, GHLEXIT1) fires as the page leaves for Stripe, with no form data;
@@ -670,7 +670,7 @@
     }
     function signedOut() {
       SIGNED_IN = false;
-      $("fField").hidden = false; $("fEmail").required = true; $("fNext").hidden = false;
+      $("fNext").hidden = false;
     }
     function checkoutSignedIn(plan) {
       if (LEAVING) return;
@@ -682,16 +682,15 @@
         if (x.j && x.j.ok && x.j.url) { toStripe(x.j.url); return; }
         busy(false);
         toForm();
-        // The session ended in another tab: the email box comes back.
-        if (x.status === 401) { signedOut(); return; }
+        // The session ended in another tab: the next press goes signed out.
+        if (x.status === 401) { signedOut(); err("Try again."); return; }
         err((x.j && x.j.error) || "Couldn't open checkout. Try again.");
       }).catch(function () { busy(false); toForm(); err("Network hiccup — try again."); });
     }
     function buyOrAsk(plan) {
       PICK = plan || "pro";
       if (SIGNED_IN) { checkoutSignedIn(PICK); return; }
-      if (EMAIL_RE.test((($("fEmail").value) || "").trim())) { go(); return; }
-      toForm();
+      go();
     }
     var planBtns = document.querySelectorAll("[data-plan]");
     for (var b = 0; b < planBtns.length; b++) {
@@ -717,8 +716,6 @@
     var SIGNED_IN = false;
     function signedIn(used, price, per) {
       SIGNED_IN = true;
-      $("fField").hidden = true;
-      $("fEmail").required = false;
       $("fNext").hidden = true;
       if (!used) return;
       var charged = price + " " + per + ", charged today. Cancel anytime.";
@@ -741,11 +738,14 @@
       }).catch(function () {});
     } catch (e) {}
 
-    // An email typed earlier in this tab (sessionStorage, never the address bar).
-    try {
-      var kept = sessionStorage.getItem("sona.optin.email");
-      if (kept && !$("fEmail").value && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(kept)) $("fEmail").value = kept;
-    } catch (e) {}
+    // An email typed earlier in this tab (sessionStorage, never the address
+    // bar) goes to Stripe with the checkout, so its box comes filled in.
+    function keptEmail() {
+      try {
+        var kept = (sessionStorage.getItem("sona.optin.email") || "").trim();
+        return EMAIL_RE.test(kept) ? kept : "";
+      } catch (e) { return ""; }
+    }
 
     function showDone(msg) {
       $("sentMsg").textContent = msg;
@@ -757,14 +757,12 @@
     function go() {
       if ($("fGo").disabled || LEAVING) return;
       if (SIGNED_IN) { checkoutSignedIn(PICK || "pro"); return; }
-      var email = (($("fEmail").value) || "").trim();
+      var email = keptEmail();
       $("fErr").textContent = "";
-      if (!EMAIL_RE.test(email)) { err("Enter a valid email."); $("fEmail").focus(); return; }
       busy(true);
-      try { sessionStorage.setItem("sona.optin.email", email); } catch (e) {}
       fetch("/api/slp/checkout", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email, plan: PICK || "pro", source: src, attrib: attrib, ref: ref || undefined }),
+        body: JSON.stringify({ email: email || undefined, plan: PICK || "pro", source: src, attrib: attrib, ref: ref || undefined }),
       }).then(function (r) { return r.json(); }).then(function (j) {
         if (j && j.ok && j.url) { toStripe(j.url); return; }
         busy(false);

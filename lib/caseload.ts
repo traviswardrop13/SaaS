@@ -935,7 +935,11 @@ export async function activateFromSession(
   const kind: PlanKind | null = md.plan === CASELOAD_PLAN ? "caseload" : md.plan === SELF_PLAN ? "self"
     : md.plan === PRO_PLAN ? "pro" : md.plan === CLINIC_PLAN ? "clinic" : null;
   if (!kind) return { activated: false, reason: "not a clinician plan" };
-  if (!norm(email) || norm(md.slp) !== norm(email)) return { activated: false, reason: "bought by another account" };
+  // A /plans checkout opened with no email (26 Nov 2026) has no `slp` on the
+  // session: its owner is the email Stripe's page asked for (lib/plansClaim
+  // stamps it on the subscription, which isPlanFor below still checks).
+  const owner = md.slp || (md.from === "plans" && md.plan === PRO_PLAN && cs.customer_details ? cs.customer_details.email || "" : "");
+  if (!norm(email) || norm(owner) !== norm(email)) return { activated: false, reason: "bought by another account" };
   if (cs.status !== "complete") return { activated: false, reason: "checkout not complete" };
   let sub = cs.subscription as Stripe.Subscription | string | null;
   if (typeof sub === "string") sub = await stripe.subscriptions.retrieve(sub);

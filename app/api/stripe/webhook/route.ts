@@ -5,6 +5,7 @@ import { proEventFor, ghlBody, ghlUrl, proProductIds, untaggedProSub } from "@/l
 import { PRO_PLAN, PRO_NAME, planKey } from "@/lib/caseload";
 import { linkOrigin } from "@/lib/site";
 import { plansSignInMail } from "@/lib/plansMail";
+import { claimPlansSub, plansUnclaimed } from "@/lib/plansClaim";
 
 /**
  * STRIPE'S WEBHOOK (STRIPEHOOK1, 17 Nov 2026; lib/stripeHook.ts says what each
@@ -77,6 +78,16 @@ export async function POST(req: NextRequest) {
   }
   if (claimed && evt.type === "customer.subscription.created") {
     await signInEmail(claimed, String((evt.data.object as Stripe.Subscription).id || ""), (evt.data.object as Stripe.Subscription).status === "trialing");
+  }
+
+  // A /plans checkout opened with no email (26 Nov 2026): stamp the owner
+  // from the Stripe customer first, so everything below reads it.
+  if ((evt.type === "customer.subscription.created" || evt.type === "customer.subscription.updated") &&
+      plansUnclaimed((evt.data.object as Stripe.Subscription).metadata)) {
+    const key = process.env.STRIPE_SECRET_KEY;
+    if (!key) return fail("stripe", 503);
+    const r = await claimPlansSub(new Stripe(key, { httpClient: Stripe.createFetchHttpClient() }), evt.data.object as Stripe.Subscription);
+    if (r === undefined) return fail("stripe", 503);
   }
 
   // BUYNOW1: a Sona Pro bought on /plans signed nobody in. Its return page

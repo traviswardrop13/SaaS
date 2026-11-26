@@ -462,7 +462,8 @@ charterReply = null;
     posts[0].body.source === "fb" && posts[0].body.utm_campaign === "launch" && posts[0].body.fbclid === "abc123" && tracked === '["Lead"]', { posts, tracked });
   ok("…then goes on to /plans with the ad's tags, never the email in the address", arrived && url.searchParams.get("utm_campaign") === "launch" &&
     url.searchParams.get("fbclid") === "abc123" && !/sam|clinic\.org/.test(url.href), url.href);
-  ok("/plans: the email is already in its box, from this tab", await page.inputValue("#fEmail") === "sam@clinic.org");
+  ok("/plans: no email box (26 Nov 2026); the email waits in this tab", (await page.$("#fEmail")) === null &&
+    (await page.evaluate(() => sessionStorage.getItem("sona.optin.email"))) === "sam@clinic.org");
   posts = [];
   await page.evaluate(watchLeaving);
   await page.click("#fGo");
@@ -482,7 +483,7 @@ charterReply = null;
   const went = page.waitForURL((u) => u.pathname === "/plans", { timeout: 5000 }).then(() => true, () => false);
   await page.click("#oGo");
   ok("/: a lead the server couldn't take (429) fires no Lead, and the visitor still reaches the plans", await went && posts.length === 1 &&
-    (await page.evaluate(() => sessionStorage.getItem("sona.optin.lead"))) === null && await page.inputValue("#fEmail") === "sam@clinic.org");
+    (await page.evaluate(() => sessionStorage.getItem("sona.optin.lead"))) === null);
   leadReply = { ok: true, captured: true };
   posts = [];
   await page.evaluate(watchLeaving);
@@ -553,7 +554,8 @@ const keepTracks = () => Object.defineProperty(window, "sonaTrack", { configurab
       t("bfSub") === "Send it home free to every family on your caseload." && t("bfEnds") === "Ends Sunday, November 29 at 11:59 PM Mountain." &&
       !/half off/i.test(document.body.innerText);
   }));
-  ok("…with the email already in its box", await page.inputValue("#fEmail") === "bf@clinic.org");
+  ok("…with no email box, the email waiting in this tab", (await page.$("#fEmail")) === null &&
+    (await page.evaluate(() => sessionStorage.getItem("sona.optin.email"))) === "bf@clinic.org");
   posts = [];
   await page.evaluate(watchLeaving);
   await page.click("#fGo");
@@ -630,13 +632,12 @@ const PLANS_CLINIC_ON = /var CLINIC_ON = true;/.test(PLANS_SRC);
 {
   charterReply = null;
   const { context, page, errors } = await fresh({ path: "/plans", query: "&clinicianRole=slpa&workSetting=school" });
-  ok("the plans page's one form asks only for a work email", await page.evaluate(() => {
+  // NO EMAIL BOX (Travis, 26 Nov 2026: "Remove the email entry on the
+  // checkout page"): the button opens Stripe, whose page asks for it.
+  ok("the plans page's one form is just its button: no email box, nothing to type", await page.evaluate(() => {
     const form = document.getElementById("signup");
-    return [...form.querySelectorAll("input,select")].map(el => el.id).join() === "fEmail" &&
-      form.querySelectorAll("button").length === 1 && !form.querySelector("textarea") &&
-      document.forms.length === 1 && !document.getElementById("startModal") &&
-      document.querySelector('label[for="fEmail"]').textContent.trim() === "Your work email" &&
-      /^you@your(clinic|school)\./.test(document.getElementById("fEmail").placeholder);
+    return form.querySelectorAll("input,select,textarea").length === 0 && !document.getElementById("fEmail") &&
+      form.querySelectorAll("button").length === 1 && document.forms.length === 1 && !document.getElementById("startModal");
   }));
   const pixel = await page.evaluate(() => (window.fbq?.queue || []).map(args => Array.from(args)));
   const init = pixel.findIndex(args => args[0] === "init");
@@ -679,28 +680,19 @@ const PLANS_CLINIC_ON = /var CLINIC_ON = true;/.test(PLANS_SRC);
   // The parents' price box is gone (Travis, 25 Nov 2026).
   ok("no parents' price box on the page", await page.locator("#parentPrice").count() === 0);
 
-  // A plan button remembers the plan for the dashboard and brings the
-  // visitor to the one form; it buys nothing here.
-  posts = [];
-  await page.evaluate(() => { document.activeElement.blur(); document.getElementById("pricing").scrollIntoView(); });
-  await page.click('[data-plan="pro"]');
-  ok("a plan button with no email in the box returns to the form, posting nothing and keeping nothing", await settles(page, () => {
-    const r = document.getElementById("signup").getBoundingClientRect();
-    return r.top >= 0 && r.bottom <= innerHeight && document.activeElement?.id === "fEmail" && localStorage.getItem("sona.slp.wantplan") === null;
-  }) && posts.length === 0);
-
-  await page.click("#fGo");
-  ok("no email: asked for a valid one, nothing sent", /valid email/.test(await page.textContent("#fErr")) && posts.length === 0);
-  await fill(page, "not-an-email");
-  await page.click("#fGo");
-  ok("a bad email: asked for a valid one, nothing sent", /valid email/.test(await page.textContent("#fErr")) && posts.length === 0);
-
-  await page.evaluate(() => { document.activeElement.blur(); window.scrollTo(0, document.body.scrollHeight); });
-  await page.click("#finalGo");
-  ok("the closing button returns to the signup form", await settles(page, () => {
-    const r = document.getElementById("signup").getBoundingClientRect();
-    return r.top >= 0 && r.bottom <= innerHeight && document.activeElement?.id === "fEmail";
-  }));
+  // Every buy button opens Stripe at once, with no email (Stripe asks),
+  // keeping nothing for the dashboard.
+  for (const sel of ['[data-plan="pro"]', "#fGo", "#finalGo"]) {
+    await page.reload();
+    posts = [];
+    await page.evaluate(watchLeaving);
+    await page.evaluate((q) => document.querySelector(q).scrollIntoView(), sel);
+    await page.click(sel);
+    const left = await settles(page, () => window.__left.length === 1) ? (await page.evaluate(() => window.__left))[0] : null;
+    ok("with no email, " + sel + " opens Stripe's checkout at once, sending no email (Stripe asks for it), keeping nothing", !!left &&
+      left.to === STRIPE + "?who=new" && posts.length === 1 && posts[0].path === "/api/slp/checkout" && posts[0].body.email === undefined &&
+      posts[0].body.plan === "pro" && (await page.evaluate(() => localStorage.getItem("sona.slp.wantplan"))) === null, { left, posts });
+  }
   ok("no page errors", errors.length === 0, errors);
   await context.close();
 }
@@ -780,10 +772,16 @@ if (!PLANS_CLINIC_ON) {
   await second.page.click("#fGo");
   ok("signed in, nothing to sell: the server's words on the page, and it stays", await settles(second.page, () => /Sona Pro is already on\./.test(document.getElementById("fErr").textContent)) &&
     (await second.page.evaluate(() => window.__left.length)) === 0 && posts.length === 1);
-  // A session that ended meanwhile: the email box comes back.
+  // A session that ended meanwhile: the next press goes signed out, to the
+  // checkout with no email (Stripe asks for it).
   planPostReply = { ok: false, error: "sign in required", status: 401 };
   await second.page.click("#fGo");
-  ok("signed in, but the session has ended: the email box comes back", await settles(second.page, () => !document.getElementById("fField").hidden && document.getElementById("fEmail").required));
+  ok("signed in, but the session has ended: \"Try again.\", and the next press opens the signed-out checkout",
+    await settles(second.page, () => document.getElementById("fErr").textContent === "Try again." && !document.getElementById("fNext").hidden));
+  posts = [];
+  await second.page.click("#fGo");
+  ok("…which sends no email", await settles(second.page, () => window.__left.length === 1) && posts.length === 1 &&
+    posts[0].path === "/api/slp/checkout" && posts[0].body.email === undefined, posts);
   ok("…no page errors", second.errors.length === 0, second.errors);
   await second.context.close();
   planPostReply = { ok: true, url: STRIPE + "?who=signedin" };
@@ -798,9 +796,9 @@ for (const used of [false, true]) {
   planReply = { ok: true, pro: { trialAvailable: !used, price: "$19.99", per: "a month", offer: true } };
   const { context, page, errors } = await fresh({ path: "/plans", watch: true });
   posts = [];
-  const st = used ? await settles(page, () => document.getElementById("fGo").textContent === "Get Sona Pro") : await settles(page, () => document.getElementById("fField").hidden);
+  const st = used ? await settles(page, () => document.getElementById("fGo").textContent === "Get Sona Pro") : await settles(page, () => document.getElementById("fNext").hidden);
   if (!used) await page.waitForTimeout(300);   // the plan's answer, which changes nothing here
-  const st2 = await page.evaluate(() => ({ field: document.getElementById("fField").hidden, nextHidden: document.getElementById("fNext").hidden, go: document.getElementById("fGo").textContent, terms: document.getElementById("fTerms").textContent,
+  const st2 = await page.evaluate(() => ({ field: !document.getElementById("fEmail"), nextHidden: document.getElementById("fNext").hidden, go: document.getElementById("fGo").textContent, terms: document.getElementById("fTerms").textContent,
     pro: document.getElementById("proGo").textContent, proTerms: document.getElementById("proTerms").textContent, fin: document.getElementById("finalGo").textContent }));
   // No "You're signed in" line (Travis, 25 Nov 2026); the Pro card says only "Cancel anytime."
   if (!used) ok("signed in, the trial still there: the form asks for no email and adds no line about it",
@@ -831,12 +829,9 @@ for (const used of [false, true]) {
     /Sona Clinic/.test(got.t) && /\$99\s*a month/.test(got.t) && /14 days free, then \$99 a month\. Card required\./.test(got.t), got);
   ok("…the kid-side line names both plans", /every game while your Sona Pro or Sona Clinic plan is on\./.test(got.kid), got.kid);
   await page.evaluate(() => { document.activeElement.blur(); document.getElementById("pricing").scrollIntoView(); });
-  await page.click('[data-plan="clinic"]');
-  ok("…its button returns to the form", await settles(page, () => document.activeElement?.id === "fEmail"));
   posts = []; checkoutReply = { ok: false, unavailable: true, error: "Sign in to your Sona dashboard to buy this plan.", status: 409 };
-  await fill(page, "sam@clinic.org");
-  await page.click("#fGo");
-  ok("…and the form asks the checkout for the plan the button chose (clinic), never Sona Pro over it, showing the server's answer", await settles(page, () =>
+  await page.click('[data-plan="clinic"]');
+  ok("…its button asks the checkout for the plan the button chose (clinic), never Sona Pro over it, showing the server's answer", await settles(page, () =>
     /Sign in to your Sona dashboard/.test(document.getElementById("fErr").textContent)) && posts.length === 1 && posts[0].body.plan === "clinic", posts);
   checkoutReply = { ok: true, url: STRIPE + "?who=new" };
   ok("…no page errors", errors.length === 0, errors);
@@ -844,7 +839,8 @@ for (const used of [false, true]) {
   forSlpsOverride = null;
 }
 
-// ── a new visitor (BUYNOW1, 25 Nov 2026): the email, then Stripe at once;
+// ── a new visitor (BUYNOW1, 25 Nov 2026): Stripe at once (no email box
+// since 26 Nov 2026: an opt-in's email rides along, else Stripe asks);
 // once paid, Stripe brings them back and the sign-in link is emailed ──
 {
   const { context, page, errors } = await fresh({ path: "/plans", watch: true });
@@ -853,13 +849,13 @@ for (const used of [false, true]) {
     url.searchParams.get("utm_campaign") === "launch" && url.searchParams.get("fbclid") === "abc123", url.href);
   ok("/plans: under the button, one line says the next step is Stripe's checkout", (await page.textContent("#fNext")).trim() === "Secure checkout with Stripe.");
   posts = [];
-  await fill(page, "sam@clinic.org");
+  await page.evaluate(() => sessionStorage.setItem("sona.optin.email", "sam@clinic.org"));
   await page.click("#fGo");
   const left = await settles(page, () => window.__left.length === 1) ? (await page.evaluate(() => window.__left))[0] : null;
   const p = posts[0] || { body: {} };
   ok("/plans: one post opens the checkout for Sona Pro, and the page leaves for Stripe with the button saying so", posts.length === 1 && p.path === "/api/slp/checkout" &&
     p.body.plan === "pro" && !!left && left.to === STRIPE + "?who=new" && left.btn === "Opening checkout…" && left.off, { posts, left });
-  ok("/plans: the request carries the email and ad click, with no name, role or work setting",
+  ok("/plans: the request carries the opt-in's email and ad click, with no name, role or work setting",
     p.body.email === "sam@clinic.org" && !("name" in p.body) && p.body.attrib?.fbclid === "abc123" && p.body.source === "fb" &&
     !("clinicianRole" in p.body) && !("workSetting" in p.body) && !("clinicianRole" in p.body.attrib), p.body);
   ok("/plans: opening the checkout fires only Lead, and sends no sign-in email and keeps no pick for the dashboard", !!left && JSON.stringify(left.track) === '["Lead"]' &&
@@ -871,7 +867,6 @@ for (const used of [false, true]) {
 {
   const { context, page } = await fresh({ path: "/plans", watch: true });
   posts = []; checkoutReply = { ok: false, error: "Enter a valid email.", status: 400 };
-  await fill(page, "sam@clinic.org");
   await page.click("#fGo");
   ok("a refused email shows the server's reason", await settles(page, () =>
     /Enter a valid email/.test(document.getElementById("fErr").textContent)));
@@ -879,7 +874,7 @@ for (const used of [false, true]) {
   checkoutReply = { ok: false, error: "Checkout failed.", status: 502 };
   await page.click("#fGo");
   const canRetry = await settles(page, () => /Checkout failed/.test(document.getElementById("fErr").textContent)) &&
-    await page.locator("#fGo").isEnabled() && (await page.textContent("#fGo")) === "Start your free trial" && await page.inputValue("#fEmail") === "sam@clinic.org";
+    await page.locator("#fGo").isEnabled() && (await page.textContent("#fGo")) === "Start your free trial";
   ok("a checkout Stripe would not open leaves the form ready to try again, with no conversion", canRetry && (await page.evaluate(() => window.__track.length)) === 0);
   checkoutReply = { ok: true, url: STRIPE + "?who=new" };
   await page.click("#fGo");

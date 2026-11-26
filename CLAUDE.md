@@ -3265,6 +3265,20 @@ in", TRIALGO1's `sona.slp.wantplan` from /plans, the trial form's email).
   email is not proved before payment, so a typo is a paid plan nobody can
   sign in to until support moves it; the dashboard still opens only for the
   inbox.
+- **No email box on /plans (26 Nov 2026**, Travis: "Remove the email entry
+  on the checkout page"). Every buy button opens Stripe at once; Stripe's
+  page asks for the email. An email typed at the opt-in in that tab
+  (`sona.optin.email`) still rides along, so Stripe's box comes filled in
+  and the checks below still run. With none, `/api/slp/checkout` opens a
+  checkout with no owner (`from: plans`, no `slp`), and the owner is the
+  email Stripe's page took: `lib/plansClaim` stamps it on the subscription
+  as `slp`, from the return page (`customer_details.email`) or Stripe's
+  webhook (the Stripe customer's email), whichever comes first, and the
+  sign-in email follows as before. **Travis's trade:** with no email nothing
+  is asked before paying, so the free trial is given on trust (outside
+  Black Friday) and a clinician who already pays could buy a second plan;
+  no lead is kept until they pay. `caseloadtest`, `stripehooktest`,
+  `landingtest`.
 - The Pixel's Lead (InitiateCheckout after the opt-in's Lead) fires as the
   page leaves for Stripe; back from it, once the server says the plan is on,
   StartTrial (a free trial) or Purchase, once per checkout (`sona.paidtold.`
