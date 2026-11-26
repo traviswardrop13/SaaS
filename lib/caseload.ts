@@ -745,6 +745,31 @@ export async function proStatus(email: string, opts: PlanOpts = {}): Promise<Pro
 }
 
 /**
+ * BEFORE A SONA PRO CHECKOUT (PAID FOR EVERYONE, Travis, 25 Nov 2026: "no
+ * just make it paid for everyone"). Every address may buy Sona Pro but two:
+ * one whose Sona Pro is on (the caller has asked proStatus), and one a Sona
+ * Clinic already covers. The Clinic is asked directly, never through
+ * planStatus, whose "grandfathered" answer comes first and would hide it.
+ * And the retired yearly plans' records are brought back from Stripe (forced:
+ * a forced "no plan" is never remembered, NEGATIVE_MS), so the new plan goes
+ * on the Stripe customer they already pay with and Manage billing shows both.
+ * A Pro-era account was never sold a yearly plan: no search.
+ */
+export async function beforeProSale(
+  email: string,
+  opts: PlanOpts & { acct?: Record<string, unknown> | null } = {},
+): Promise<{ clinic: ClinicStatus }> {
+  const kv = opts.kv || kvCmd;
+  const now = opts.now ?? Date.now();
+  const clinic = await clinicStatus(email, { ...opts, kv, now, force: true });
+  const acct = opts.acct !== undefined ? opts.acct : await readAcct(email, kv);
+  if (!clinic.active && !proTerms(acct) && acct?.terms !== FREE_DASHBOARD_TERMS) {
+    for (const kind of ["caseload", "self"] as const) await currentPlan(email, { ...opts, kv, now, force: true, kind });
+  }
+  return { clinic };
+}
+
+/**
  * DON'T PAY TWICE (18 Nov 2026). Since the dashboard stopped selling, a
  * clinician goes from /plans straight to Stripe, with no page in between to
  * warn that an older plan still renews beside the new one; and once the new

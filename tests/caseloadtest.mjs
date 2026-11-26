@@ -482,9 +482,12 @@ const count = (pred) => S.calls.filter(pred).length;
   seedAcct("gf@clinic.org", { terms: false, code: "gf-k4", familyKey: "GFKEY234" });
   S.calls.length = 0;
   let r = await call(R.plan, "POST", "/api/slp/plan", { as: "gf@clinic.org", body: { plan: "pro" } });
-  ok("a grandfathered clinician is never sold Sona Pro: 409 already, free as promised",
-    r.status === 409 && r.json.already === true && r.json.ok === false && /free, as promised/.test(r.json.error), JSON.stringify(r.json));
-  ok("…and no checkout session is created", count((c) => c[0] === "checkout.sessions.create") === 0);
+  // PAID FOR EVERYONE (Travis, 25 Nov 2026): an account promised a free
+  // dashboard may buy Sona Pro like anyone else (it was told "already free,
+  // as promised" and sent nowhere).
+  ok("a grandfathered clinician may buy Sona Pro too: a checkout opens (paid for everyone)",
+    r.status === 200 && r.json.ok === true && !!r.json.url && count((c) => c[0] === "checkout.sessions.create") === 1, JSON.stringify(r.json));
+  ok("…and no page says \"free, as promised\" any more", !/as promised when you signed up/.test(JSON.stringify(r.json)));
 
   // RETIRED FROM SALE: a tab opened before 12 Nov 2026 still shows "$59.99
   // a year" on its buttons, and must not open a checkout for a monthly price
@@ -697,9 +700,44 @@ const count = (pred) => S.calls.filter(pred).length;
   KV.K.delete("slpplan:" + yr);
   r = await call(R.plan, "GET", "/api/slp/plan", { as: yr });
   ok("one paying for both retired plans is offered nothing: Sona Pro would add nothing", r.json.active === true && r.json.self.active === true && r.json.pro.offer === false, JSON.stringify(r.json));
+  S.calls.length = 0;
   r = await call(R.plan, "POST", "/api/slp/plan", { as: yr, body: { plan: "pro" } });
-  ok("…and is refused if they ask anyway", r.status === 409 && r.json.already === true && /everything Sona Pro includes/.test(r.json.error), JSON.stringify(r.json));
-  S.subs.delete("sub_yr_self"); S.subs.delete("sub_yr_case");
+  const py2 = (S.calls.find((c) => c[0] === "checkout.sessions.create") || [])[1];
+  ok("…but may still buy it if they ask (paid for everyone), under the customer they already pay with",
+    r.status === 200 && r.json.ok === true && py2 && py2.customer === "cus_yr", JSON.stringify(r.json));
+  // Its records gone from the store (a mirror that expired, or never written):
+  // the checkout still finds the customer in Stripe, from either door.
+  S.subs.delete("sub_yr_case");
+  for (const k of ["slpplan:", "slpplan-self:", "slpplan-pro:", "slpplan-clinic:"]) KV.K.delete(k + yr);
+  S.calls.length = 0;
+  r = await call(R.buy, "POST", "/api/slp/checkout", { body: { email: yr } });
+  const py3 = (S.calls.find((c) => c[0] === "checkout.sessions.create") || [])[1];
+  ok("…and from /plans with no record of the yearly plan in the store, Stripe is asked, so it is still the same customer",
+    r.status === 200 && py3 && py3.customer === "cus_yr" && !("customer_email" in py3), JSON.stringify([r.json, py3 && py3.customer]));
+  for (const k of ["slpplan:", "slpplan-self:", "slpplan-pro:", "slpplan-clinic:"]) KV.K.delete(k + yr);
+  S.calls.length = 0;
+  r = await call(R.plan, "POST", "/api/slp/plan", { as: yr, body: { plan: "pro" } });
+  const py4 = (S.calls.find((c) => c[0] === "checkout.sessions.create") || [])[1];
+  ok("…and the same signed in",
+    r.status === 200 && py4 && py4.customer === "cus_yr" && !("customer_email" in py4), JSON.stringify([r.json, py4 && py4.customer]));
+  S.subs.delete("sub_yr_self");
+
+  // An early (grandfathered) account on someone's Sona Clinic: the Clinic
+  // already covers it, so it is not sold Sona Pro (planStatus would answer
+  // "grandfathered" first and hide the Clinic: beforeProSale asks it directly).
+  const gfo = "gf.owner@brightsteps.example", gfm = "gf.member@brightsteps.example";
+  seedAcct(gfo, { terms: C.PRO_TERMS, code: "gfowner-k4", familyKey: "GFOWNER2" });
+  seedAcct(gfm, { terms: false, code: "gfmember-k4", familyKey: "GFMEMBR2" });
+  mkSub("sub_gf_clinic", { slp: gfo, plan: "slp-clinic", customer: "cus_gfo", status: "active", interval: "month" });
+  hash("slpteam:" + gfo).set(gfm, JSON.stringify({ state: "active", addedAt: new Date().toISOString(), acceptedAt: new Date().toISOString() }));
+  KV.K.set("slpteam-of:" + gfm, gfo);
+  S.calls.length = 0;
+  r = await call(R.buy, "POST", "/api/slp/checkout", { body: { email: gfm } });
+  ok("an early account on a Sona Clinic is told the Clinic covers it, from /plans, and no checkout is made",
+    r.status === 409 && r.json.already === true && /Sona Clinic/.test(r.json.error) && count((c) => c[0] === "checkout.sessions.create") === 0, JSON.stringify(r.json));
+  r = await call(R.plan, "POST", "/api/slp/plan", { as: gfm, body: { plan: "pro" } });
+  ok("…and signed in", r.status === 409 && r.json.already === true && /Sona Clinic/.test(r.json.error) && count((c) => c[0] === "checkout.sessions.create") === 0, JSON.stringify(r.json));
+  hash("slpteam:" + gfo).delete(gfm); KV.K.delete("slpteam-of:" + gfm); S.subs.delete("sub_gf_clinic");
 }
 
 // ═════════════════════════ the yearly plans sold until 12 Nov 2026 keep working ═════════════════════════
@@ -2797,6 +2835,13 @@ const count = (pred) => S.calls.filter(pred).length;
   r = await call(R.buy, "POST", "/api/slp/checkout", { body: { email: has } });
   ok("an address that already has Sona Pro is told to sign in, and no checkout is made", r.status === 409 && r.json.already === true && /Sign in/.test(r.json.error) &&
     count((c) => c[0] === "checkout.sessions.create") === 0, JSON.stringify(r.json));
+  // PAID FOR EVERYONE (Travis, 25 Nov 2026): an early account, promised a
+  // free dashboard, typed on /plans goes to Stripe like anyone else.
+  seedAcct("earlyfree@brightsteps.example", { terms: false, code: "early-k9", familyKey: "EARLYK23" });
+  S.calls.length = 0;
+  r = await call(R.buy, "POST", "/api/slp/checkout", { body: { email: "earlyfree@brightsteps.example" } });
+  ok("an early account promised a free dashboard still gets a checkout from /plans (paid for everyone)",
+    r.status === 200 && r.json.ok === true && !!r.json.url && count((c) => c[0] === "checkout.sessions.create") === 1, JSON.stringify(r.json));
   // after Black Friday: the free trial, once per clinician
   at("2026-12-02T18:00:00Z"); S.calls.length = 0;
   r = await call(R.buy, "POST", "/api/slp/checkout", { body: { email: "aftersale@brightsteps.example" } });

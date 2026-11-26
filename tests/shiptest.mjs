@@ -261,6 +261,15 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     shelfDays.filter((b) => !tileDay(b.slug)[0] || (tileDay(b.slug)[1] || "") !== b.opens).map((b) => b.slug).join(", "));
   ok("…and its book count is only the open ones, worked out from those days",
     /<span class="n" id="bookCount">\d+<\/span> picture books\./.test(parents) && /\$\("bookCount"\)/.test(parents) && !/a picture book for every sound/.test(parents));
+  // THE CLINICIANS' PAGE CARRIES THE SAME STRIPS (Travis, 25 Nov 2026: "at
+  // one point we had a carousel of the games and books going across the
+  // screen", in place of "Home practice is the hard part"). Tile for tile and
+  // count for count the parent page's, so every pin above holds for it too.
+  const tiles = (t) => (t.match(/<li class="tile [gb]"[^>]*><img [^>]*><span>[^<]*<\/span><\/li>/g) || []).join("\n");
+  const counts = (t) => (t.match(/<span class="n">\d+<\/span> games\. <span class="n" id="bookCount">\d+<\/span> picture books\./) || [""])[0];
+  ok("the clinicians' page shows the parent page's games and books strips, tile for tile, with the same counts",
+    tiles(slps).length > 1000 && tiles(slps) === tiles(parents) && counts(slps) !== "" && counts(slps) === counts(parents) &&
+    /id="library"/.test(slps) && !/Home practice is the hard part/.test(slps) && /\$\("bookCount"\)/.test(slps), counts(slps) + " / " + counts(parents));
   ok("…and the sounds answer names all " + sounds.length, new RegExp(sounds.length + " speech sounds: P, B, M, N, T, D, K, G, F, V, S, Z, SH, CH, J, L, R, and both TH sounds").test(pShown));
 
   const slpHeadline = (slps.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/) || ["", ""])[1]

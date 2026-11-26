@@ -4,7 +4,7 @@ import { readSession, liveSession, kvConfigured, kvCmd } from "@/lib/slpAuth";
 import { tellCrm } from "@/lib/slpLead";
 import { rateLimit } from "@/lib/rateLimit";
 import {
-  planStatus, selfStatus, proStatus, clinicStatus, dashboardOpen, alsoRenews, activateFromSession, readAcct, readPlan, grandfathered, StoreUnavailable, clinicOn,
+  planStatus, selfStatus, proStatus, clinicStatus, beforeProSale, dashboardOpen, alsoRenews, activateFromSession, readAcct, readPlan, grandfathered, StoreUnavailable, clinicOn,
   PRO_CENTS, PRO_PRICE, PRO_PER, PRO_INTERVAL, PRO_TRIAL_DAYS, PRO_PLAN, PRO_NAME,
   BF_PRICE, BF_MONTHS, BF_OFFER, bfOn, ensureBfCoupon,
   CLINIC_CENTS, CLINIC_PRICE, CLINIC_PER, CLINIC_INTERVAL, CLINIC_TRIAL_DAYS, CLINIC_PLAN, CLINIC_NAME, CLINIC_SEATS,
@@ -256,16 +256,18 @@ export async function POST(req: NextRequest) {
       if (pro.active) {
         return NextResponse.json({ ok: false, already: true, error: PRO_NAME + " is already on." }, { status: 409 });
       }
-      const plan = await planStatus(s.email, { stripe, acct, force: true });
-      const self = await selfStatus(s.email, { stripe, acct, force: true });
-      if (plan.active && self.active) {
+      // PAID FOR EVERYONE (Travis, 25 Nov 2026: "no just make it paid for
+      // everyone", of /plans telling his own early account "already free,
+      // as promised"). An account promised a free dashboard, or still on a
+      // yearly plan, may buy Sona Pro like anyone else: nothing it already
+      // has is taken away, and Settings tells a yearly holder to cancel the
+      // older plan (alsoRenews). Only a live Sona Pro, and a Sona Clinic
+      // that already covers this clinician, are never sold over.
+      const { clinic } = await beforeProSale(s.email, { stripe, acct });
+      if (clinic.active) {
         return NextResponse.json({
           ok: false, already: true,
-          error: plan.source === "grandfathered"
-            ? "Your dashboard, your own phone and your caseload are already free, as promised when you signed up."
-            : plan.source === "clinic"
-              ? "Your " + CLINIC_NAME + " plan already includes everything " + PRO_NAME + " does."
-              : "You already have everything " + PRO_NAME + " includes.",
+          error: "Your " + CLINIC_NAME + " plan already includes everything " + PRO_NAME + " does.",
         }, { status: 409 });
       }
     } else {

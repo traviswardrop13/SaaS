@@ -3112,8 +3112,8 @@ MAIL1, the CRM webhook, STRIPEHOOK1's events, GHLPRO1's checkout).
   on to `/plans`, with no Lead. `telemetrytest` pins all of it.
 - **`/plans` (for-slps.html, canonical www.speaksona.com/plans) sells more**
   (Travis: "we just need to do more selling"): the hero and form as they
-  were, then the problem ("Home practice is the hard part.", three plain
-  notes, no numbers or outcomes), what you can do, **two plans**, Share &
+  were, then the games and books strips (since 25 Nov 2026, in place of
+  "Home practice is the hard part.", below), what you can do, **two plans**, Share &
   earn, the kid side, **Rachel** (her credential line word for word; what
   is hers to decide), good to know, the FAQ (plus which plan, do families
   pay, cancelling, how Share & earn pays), the closing button.
@@ -3288,6 +3288,31 @@ in", TRIALGO1's `sona.slp.wantplan` from /plans, the trial form's email).
   & earn with a gift icon), "Cancel anytime." under both plan buttons, the
   two-line Black Friday box, and no parents' price box or "Good to know"
   section. **Rachel's:** the headline and the review on a clinicians' page.
+- **Paid for everyone (Travis, 25 Nov 2026: "no just make it paid for
+  everyone"**, of /plans telling his own early account "already free, as
+  promised" in red). `/api/slp/plan` and `/api/slp/checkout` sell Sona Pro
+  to any email: an account promised a free dashboard, or one still on a
+  yearly plan, gets a checkout like anyone else (it loses nothing it has;
+  a yearly holder is told in Settings to cancel the older plan,
+  `alsoRenews`). Only a live Sona Pro ("already on") and a Sona Clinic that
+  covers the address (hidden) are refused, both asked by `beforeProSale`
+  (`lib/caseload`), which asks the Clinic directly (planStatus answers
+  "grandfathered" first and would hide it) and brings back a yearly plan's
+  Stripe customer, so the new plan goes on the same one. Whether the early accounts keep
+  their free dashboard at all is a separate call, not made.
+- **The games and books carousel (Travis, 25 Nov 2026: "replace the home
+  practice is the hard part section with the carousel and keep what you can
+  do with sona but add a tiny bit of pizazz")**: `#library`, right under
+  the hero on the page's ink, is the parent page's two sliding strips tile
+  for tile with its counts ("25 games. 36 picture books."; `shiptest` holds
+  them equal to parents.html's, so a game or book added there must be added
+  here), looped by the same script (still under Reduce Motion). Its tiles
+  are a quarter smaller than the parent page's, 112 px (Travis, the same
+  day: "a little less chunky. thin it maybe 25%"); the books run the other
+  way and a pointer pauses a strip. "What you
+  can do with Sona." keeps its words and gains a drawn icon in a soft colour
+  on each card, a thin line of that colour across its top and a small lift
+  under a pointer.
 `caseloadtest`, `landingtest`, `shiptest`, `slpapi`, `telemetrytest` play it.
 
 ## The app lives at app.speaksona.com (APPHOST1, 17 Nov 2026)
