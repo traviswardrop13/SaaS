@@ -80,7 +80,7 @@
     .family-settings #soundsPick{margin-top:8px;}
     .family-settings #soundsPick[hidden]{display:none;}
     .family-settings .sound .hint{display:block;margin-top:1px;font-family:"Nunito",sans-serif;font-size:9.5px;font-weight:800;color:var(--muted);}
-    .family-settings #posBox[hidden],.family-settings #posNote[hidden]{display:none;}
+    .family-settings #posBox[hidden],.family-settings #posNote[hidden],.family-settings #gamesNote[hidden]{display:none;}
     .family-settings #posNote{margin-top:10px;}
     /* the two practice pickers: if a choice is ever longer than a 320 px
        phone shows closed, the cut ends in "…" instead of mid-letter */
@@ -231,6 +231,8 @@
         <option value="sentence">Sentences</option>
       </select>
       <p class="muted set-lead" id="ladderNote"></p>
+      <!-- CHILDGAMES1: shown only when this child's speech therapist picked their games -->
+      <p class="muted set-lead" id="gamesNote" hidden></p>
       <div class="set-reset"><button type="button" class="btn ghost" id="reset">Reset progress</button></div>
     </section>
 
@@ -490,6 +492,10 @@
       if (openPos.length < 2) lines = ["For now, Sona practices each sound at the beginning of a word."];
       var pn = document.getElementById("posNote");
       pn.textContent = lines.join(" "); pn.hidden = !lines.length;
+      // CHILDGAMES1: the speech therapist's game list, read only
+      var gn = document.getElementById("gamesNote"), picked = Sona.slpGames ? Sona.slpGames() : null;
+      gn.textContent = picked ? "Games: " + nm.charAt(0).toUpperCase() + nm.slice(1) + "\u2019s speech therapist picked " + picked.length + (picked.length === 1 ? " game" : " games") + " to show on Home." : "";
+      gn.hidden = !picked;
       // the steps line: what the day's rounds will ask, for the sound the
       // practice page asks next, from the step the day starts at up to one
       // past what the child has done (charge.html's own rule)

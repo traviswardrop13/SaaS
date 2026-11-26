@@ -88,6 +88,24 @@
     <div class="tw"><table id="tDays" hidden></table></div>
     <div class="tw" style="margin-top:10px"><table id="tPlay" hidden></table></div>
 
+    <!-- SHARE & EARN (REFER1, 20 Nov 2026): therapists whose link brought in
+         another therapist. $8 a month for each one who pays (past the free
+         trial). Pay these by hand each month. -->
+    <!-- BLACK FRIDAY (BFMAIL1, 25 Nov 2026): today's email to every speech
+         therapist on the list, by a press (the daily cron sends Thu-Sun). -->
+    <h2>Black Friday email</h2>
+    <p class="muted">Today's Black Friday email to every speech therapist on your list. Skips anyone who unsubscribed, already pays for Sona Pro, or got the sign-up email in the last 12 hours. Thursday to Sunday the emails go out by themselves at about 9 AM Mountain.</p>
+    <p><button id="bfCheck" type="button">Check who gets today's email</button> <button id="bfSend" type="button" hidden>Send it now</button></p>
+    <p class="muted" id="bfSay" role="status"></p>
+
+    <h2>Referrals</h2>
+    <p class="muted">Therapists whose link brought in another therapist. Pay $8 a month for each one who is paying (past the free trial). Paid by hand; anyone paid $600 or more in a year needs a 1099.</p>
+    <div class="cards">
+      <div class="card"><span class="muted">Owed this month</span><b id="rOwed">$0</b></div>
+    </div>
+    <p class="muted" id="rWait">Loading…</p>
+    <div class="tw"><table id="rRows" hidden></table></div>
+
     <h2>Since the new landing page</h2>
     <p class="muted">Everyone who left an email since 25 Sep 2026, 1:20 pm Mountain, when speaksona.com started asking “I’m a…”. Each person counts once.</p>
     <div class="cards">
@@ -108,7 +126,7 @@
 
     <h2>Therapist accounts</h2>
     <p class="muted">Everyone who signed up for the dashboard, from the start. "Not yet" means Resend doesn't have them yet: the daily run adds them, a batch a day, once Kit's unsubscribes are in.</p>
-    <p class="muted">"pro" (or "pro trial", in its first 14 days) is Sona Pro, $19.99 a month, the one plan on sale since 12 Nov 2026: it turns on their dashboard, their own phone and their whole caseload. Own Premium (every game on their own phone): therapists who signed up 29 Sep to 12 Nov 2026 could buy it, $59.99 a year, until Sona Pro replaced it. Those who signed up 24–29 Sep were told it was free with a work email; one of them on gmail, yahoo or the like can press "Request access", and an Approve button shows here: check they're a real clinician, then Approve. "Older plan" means their own Premium comes with the $79.99 caseload plan sold before 29 Sep. Caseload: "paid" is a caseload plan ($59.99 a year on top of their own, or the older $79.99), "grandfathered" signed up before 24 Sep and is covered free forever, "none" is neither.</p>
+    <p class="muted">"pro" (or "pro trial", in its first 14 days) is Sona Pro, $19.99 a month, on sale since 12 Nov 2026: it turns on their dashboard, their own phone and their whole caseload. "clinic" (or "clinic trial") bought Sona Clinic, $99 a month, built on 17 Nov 2026 and hidden from sale since 18 Nov 2026 (so none yet): the same for them and for every clinician on their clinic; "clinic member" is one of those clinicians. Dashboard: "free" was promised before 12 Nov 2026; "with a plan" is everyone since, whose dashboard comes with Sona Pro or Sona Clinic; "with a plan (13–17 Nov signup)" came through the free dashboard signup of 13–17 Nov 2026 and was moved to the trial on 18 Nov. Own Premium (every game on their own phone): therapists who signed up 29 Sep to 12 Nov 2026 could buy it, $59.99 a year, until Sona Pro replaced it. Those who signed up 24–29 Sep were told it was free with a work email; one of them on gmail, yahoo or the like can press "Request access", and an Approve button shows here: check they're a real clinician, then Approve. "Older plan" means their own Premium comes with the $79.99 caseload plan sold before 29 Sep. Caseload: "paid" is a caseload plan ($59.99 a year on top of their own, or the older $79.99), "grandfathered" signed up before 24 Sep and is covered free forever, "none" is neither.</p>
     <span class="muted" id="approveMsg" role="status"></span>
     <div class="row"><button class="ghost" id="csvSlp">Download CSV</button></div>
     <div class="tw"><table id="tSlp"></table></div>
@@ -137,7 +155,7 @@
     // RevenueCat's word for each address (lib/revenuecat.ts), in plain words
     var PREMIUM = { trial: "free days", paid: "paying", cancelled: "cancelled", billing: "payment problem", ended: "ended", moved: "moved to another device" };
     var SLP_COLS = [["createdAt", "Signed up"], ["email", "Email"], ["name", "Name"], ["clinic", "Clinic"], ["clinicianRole", "Role"], ["workSetting", "Work setting"], ["source", "From"], ["inCrm", "Sent to email list"],
-      ["workEmail", "Work email"], ["accessRequested", "Access requested"], ["approve", "Own Premium"], ["caseload", "Caseload"]];
+      ["workEmail", "Work email"], ["accessRequested", "Access requested"], ["approve", "Own Premium"], ["caseload", "Caseload"], ["dashboard", "Dashboard"]];
     // The CSV carries the answer, not the button.
     var SLP_CSV_COLS = SLP_COLS.map(function (c) { return c[0] === "approve" ? ["approved", "Approved"] : c; });
 
@@ -248,11 +266,61 @@
           $("out").hidden = false;
           loadMessages(key);
           loadTrials(key);
+          loadReferrals(key);
         })
         .catch(function () {
           $("go").disabled = false; $("go").textContent = "Show leads";
           $("err").textContent = "Network hiccup — try again.";
         });
+    }
+    // BLACK FRIDAY (BFMAIL1): /api/founders/bf-send. Check first (GET, sends
+    // nothing), then Send (POST) only after a check named how many.
+    function bfKey() { return ($("key").value || "").trim(); }
+    function bfSay(t) { $("bfSay").textContent = t; }
+    $("bfCheck").onclick = function () {
+      $("bfSend").hidden = true; bfSay("Checking…");
+      fetch("/api/founders/bf-send", { headers: { "x-founder-key": bfKey() }, cache: "no-store" })
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          if (!j || !j.ok) { bfSay((j && j.error) || "Couldn't check."); return; }
+          if (j.stopped === "off") { bfSay("There's no Black Friday email to send today."); return; }
+          if (!j.left && !j.more) { bfSay("Nobody left to send today's email to (" + j.skipped + " skipped)."); return; }
+          // j.more: the count ran out of time, so more may be waiting than it says
+          bfSay(j.left ? "Today's email, \u201c" + (j.subject || "") + "\u201d, would go to " + j.left + (j.more ? "+" : "") + " therapists (" + j.skipped + " skipped)."
+            : "The list is long and the count ran out of time. Some therapists may still be waiting for today's email.");
+          $("bfSend").textContent = j.left ? "Send it now to " + j.left + (j.more ? "+" : "") : "Send to whoever is left";
+          $("bfSend").hidden = false;
+        })
+        .catch(function () { bfSay("Network hiccup. Try again."); });
+    };
+    $("bfSend").onclick = function () {
+      $("bfSend").hidden = true; bfSay("Sending… this can take a few minutes. Keep this page open.");
+      fetch("/api/founders/bf-send", { method: "POST", headers: { "x-founder-key": bfKey() }, cache: "no-store" })
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          if (!j || !j.ok) { bfSay((j && j.error) || "Couldn't send."); return; }
+          var t = "Sent " + j.sent + ".";
+          if (j.failed) t += " " + j.failed + " didn't go.";
+          if (j.left) t += " " + j.left + (j.more ? "+" : "") + " still to go: press Check, then Send again.";
+          bfSay(t);
+        })
+        .catch(function () { bfSay("The page lost touch while sending. Press Check to see how many are left."); });
+    };
+    // REFERRALS (REFER1): /api/founders/referrals
+    function loadReferrals(key) {
+      fetch("/api/founders/referrals", { headers: { "x-founder-key": key }, cache: "no-store" })
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          if (!j || !j.ok) { $("rWait").textContent = (j && j.error) || "Couldn't load the referrals."; return; }
+          $("rOwed").textContent = j.owed || "$0";
+          if (!j.rows || !j.rows.length) { $("rWait").textContent = "No referrals yet."; return; }
+          $("rWait").textContent = "";
+          var e = function (v) { return String(v).replace(/[<>&"]/g, ""); };
+          var rows = "<tr><th>Therapist</th><th>Signed up</th><th>On trial</th><th>Paying</th><th>Owed a month</th></tr>";
+          j.rows.forEach(function (r) { rows += "<tr><td>" + e(r.email) + "</td><td>" + r.signedUp + "</td><td>" + r.trialing + "</td><td>" + r.paying + "</td><td>" + e(r.monthly) + "</td></tr>"; });
+          $("rRows").innerHTML = rows; $("rRows").hidden = false;
+        })
+        .catch(function () { $("rWait").textContent = "Network hiccup loading the referrals."; });
     }
     // FREE TRIALS (TRIAL1): /api/founders/trials, numbers only
     function pct(a, b) { return b ? Math.round(100 * a / b) + "%" : "–"; }

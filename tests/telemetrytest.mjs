@@ -143,15 +143,17 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
 
   // A tap is not a sign-up. Firing on the click would teach the campaign to
   // buy people who open forms and abandon them.
-  const handler = slps.slice(slps.indexOf("function go()"));
-  const okGate = handler.indexOf("if (!j || !j.ok)");
-  const lead = handler.indexOf('sonaTrack("Lead")');
-  ok("Lead fires only after the server accepted the sign-up",
-    okGate > 0 && lead > okGate,
+  // BUYNOW1 (25 Nov 2026): the Lead (or InitiateCheckout) is sent only as
+  // the page leaves for a checkout Stripe has opened (toStripe), and every
+  // call to toStripe sits behind the server's yes with a checkout address.
+  const toStripe = (slps.match(/function toStripe\(url\) \{[\s\S]*?\n    \}/) || [""])[0];
+  const stripeCalls = slps.match(/[^\n]*toStripe\([^)]*\)[^\n]*/g) || [];
+  ok("Lead fires only once the server opened the checkout",
+    /sonaTrack\("Lead"\)/.test(toStripe) && (slps.match(/sonaTrack\("Lead"\)/g) || []).length === 1 &&
+    stripeCalls.filter((l) => !/function toStripe/.test(l)).length === 2 &&
+    stripeCalls.filter((l) => !/function toStripe/.test(l)).every((l) => /if \(x?\.?j && x?\.?j\.ok && x?\.?j\.url\) \{ toStripe\(x?\.?j\.url\); return; \}/.test(l)),
     "otherwise the campaign optimises for opening the form, not completing it");
-  ok("…and email delivery is never counted as a completed registration",
-    handler.indexOf("if (j.sent !== true) {") > okGate &&
-    lead > handler.indexOf("if (j.sent !== true) {") && !/CompleteRegistration/.test(handler));
+  ok("…and nothing is ever counted as a completed registration", !/CompleteRegistration/.test(slps));
 
   // THE ROOT IS THE PARENT PAGE NOW (26 Sep 2026), and the parent ads land on
   // it: the same regression, the same rule. PageView on load, Lead only once
@@ -164,13 +166,39 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   ok("…with no parameters, and never CompleteRegistration", /sonaTrack\("Lead"\); \} catch/.test(pgo) && !/CompleteRegistration/.test(parents));
   ok("…and the ad's own click id rides along with the lead", /"fbclid"/.test(parents) && /utm_content/.test(parents) && /\}, attrib\)\)/.test(parents));
 
+  // THE OPT-IN AT / (GHLEXIT1, 24 Nov 2026): the clinician ads land on it,
+  // so it carries the pixel, with Meta's form reading off; its Lead fires only
+  // once /api/lead said yes, with no parameters; and the email moves to the
+  // plans page in this tab's sessionStorage, never in an address.
+  const start = readFileSync(ROOT + "/start.html", "utf8");
+  const startPixel = (start.match(/<script\b[^>]*\bsrc="\/pixel\.js"[^>]*>/) || [""])[0];
+  ok("the opt-in at /, where the clinician ads land, loads the pixel with Meta's form reading off",
+    !!startPixel && /\bdata-autoconfig="off"/.test(startPixel));
+  const sgo = start.slice(start.indexOf("function go()"));
+  ok("…and fires Lead only after /api/lead accepted the email, with no parameters, never CompleteRegistration",
+    sgo.indexOf("if (j && j.ok === true) {") > 0 && sgo.indexOf('sonaTrack("Lead")') > sgo.indexOf("if (j && j.ok === true) {") &&
+    /sonaTrack\("Lead"\); \} catch/.test(sgo) && !/CompleteRegistration/.test(start));
+  ok("…and the email goes on in sessionStorage, never in the address: the plans page is /plans plus the ad's own tags",
+    /sessionStorage\.setItem\("sona\.optin\.email", email\)/.test(sgo) && /function toPlans\(\) \{ location\.assign\("\/plans" \+ location\.search\); \}/.test(start) &&
+    !/assign\([^)]*email/.test(start) && /"fbclid"/.test(start) && /utm_content/.test(start));
+
+  // THE BLACK FRIDAY OPT-IN (BF1, /blackfriday): the same rules as /'s.
+  const bf = readFileSync(ROOT + "/bf.html", "utf8");
+  const bfPixel = (bf.match(/<script\b[^>]*\bsrc="\/pixel\.js"[^>]*>/) || [""])[0];
+  const bgo = bf.slice(bf.indexOf("function go()"));
+  ok("the Black Friday opt-in loads the pixel with Meta's form reading off, and fires Lead only after /api/lead's ok, with nothing attached",
+    !!bfPixel && /\bdata-autoconfig="off"/.test(bfPixel) && bgo.indexOf("if (j && j.ok === true) {") > 0 &&
+    bgo.indexOf('sonaTrack("Lead")') > bgo.indexOf("if (j && j.ok === true) {") && /sonaTrack\("Lead"\); \} catch/.test(bgo) && !/CompleteRegistration/.test(bf));
+  ok("…and its email goes on in sessionStorage, never in an address",
+    /sessionStorage\.setItem\("sona\.optin\.email", email\)/.test(bgo) && !/assign\([^)]*email/.test(bf));
+
   // WHERE THE PIXEL MAY LOAD, as an allow-list. A deny-list would mean every
   // new page is tracked until someone remembers to exclude it, and the pages
   // that come next are a child's. These four are the grown-up marketing
   // funnel; every other page — the practice screens, the clinician's caseload,
   // the family's redemption link — carries or is one keystroke from a child's
   // identity and gets no ad tracking at all.
-  const MARKETING = new Set(["check.html", "subscribe.html", "onboarding.html", "for-slps.html", "parents.html", "try.html"]);
+  const MARKETING = new Set(["check.html", "subscribe.html", "onboarding.html", "for-slps.html", "start.html", "bf.html", "parents.html", "try.html"]);
   const pages = readdirSync(ROOT).filter((f) => f.endsWith(".html"));
   const strays = pages.filter((f) => !MARKETING.has(f) && /pixel\.js/.test(readFileSync(ROOT + "/" + f, "utf8")));
   ok("no page outside the grown-up marketing funnel loads the ad pixel", strays.length === 0, strays.join(", "));

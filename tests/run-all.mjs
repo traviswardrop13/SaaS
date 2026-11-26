@@ -14,6 +14,7 @@ const SUITES = [
   "chartertest.mjs",   // CHARTER1: $59.99 for the first 50 families, then $99.99 — true by construction
   "shiptest.mjs",      // SHIP1: what reaches the phone — the header that makes a deploy visible, without re-downloading the app every page
   "landingtest.mjs", // LANDING1: speaksona.com's Start free pop-up: who they are, the lead, then the App Store
+  "bfmailtest.mjs", // BFMAIL1: an SLP opt-in during Black Friday gets one email about the deal, once, with a real unsubscribe
   "nurturetest.mjs", // NURTURE1: a new sign-up gets the welcome now and the 5-minute email tomorrow, once each, with a real unsubscribe
   "mailtest.mjs", // MAIL1: every email goes through lib/mail: GoHighLevel (upsert, then send; a 429 once more; email DND on unsubscribe) when set, else Resend as before
   "contactstest.mjs", // CONTACTS1: every grown-up's email joins Resend's contacts in its segment; nobody is re-subscribed; unsubscribes go both ways; Kit's leavers first
@@ -28,8 +29,10 @@ const SUITES = [
   "kidtest.mjs",   // KIDS1: per-child progress, switching, family-wide entitlement
   "slpcode.mjs",   // CODES1: SLP family credential — verified redemption, honest gate
   "slpapi.mjs",    // SLPAPI1: the clinician's roster — invites ahead of the family, removal, meta the device can't overwrite
+  "referraltest.mjs", // REFER1/CHAT1: share & earn ($8 a month per paying therapist, never a family, only a new account takes a code) and the dashboard chat button (keyboard dictation, no speech API)
   "familylogintest.mjs", // FAMLOGIN1: a login the clinician makes, typed into the app: the link's access and walls, never consent, the password once and only hashed, the family's own password, Log in on the first screen
-  "slpapptest.mjs", // SLPAPP1: the clinicians' own app: sign-in by the emailed code, the dashboard there selling nothing, Delete my account (code kept closed, syncs dropped), Block in the community
+  "childgamestest.mjs", // CHILDGAMES1: the games a therapist picks for a child: hidden on Home, never sold, never access, gone with a grown-up's no
+  "slpapptest.mjs", // SLPAPP1: the clinicians' own app: sign-in by the emailed code, the dashboard there selling nothing, Delete my account (code kept closed, syncs dropped, old community posts scrubbed), the /slps loop
   "caseloadtest.mjs", // CASELOAD1: the clinician's plans ($59.99 for you, $59.99 more for the caseload) — who is covered, grandfathering, own phone, parent invites
   "ttsroutetest.mjs", // voice provider, delivery cache, safe fallback and request deadline
   "voiceclienttest.mjs", // actual playback source, old-cache refresh and complete spoken turns
@@ -77,6 +80,7 @@ const SUITES = [
   "roadtest.mjs", // ROAD1/LEVELS1 on Home and the road: one tap still plays, "Pick a level" once per game when a level opens, the level badge, an old "Level 1 only" ignored; Home only reads
   "questtest.mjs", // QUEST1: the 14-day daily adventure; Home only reads, a round of today's game finishes the day once, a sticker never coins, a new day is the next game day played or not (CAL1), ages 3-4 get their own
   "talkstorytest.mjs", // TALK1: Day 1 talks in the child's own sound: five stories (R, S, L, Z, F), every page's word starting with its sound before a vowel, Day 1's slot by the child's sounds (a Day 1 finished stays what it was), the player's word moment (three sayings, silence never turns a page, Not now reads on with Next), the day finished on the intro's last word, the replay
+  "talkmoretest.mjs", // TALKMORE1: later talking stories after the 14 days, one a day in the child's own sound (homework first), each off until ready (pictures drawn, Rachel's reading); kept by id, a skipped one comes back, then the game of the day; nothing changes for a child before Day 14 or without one
   "storycoretest.mjs", // STORY1: the daily story's rules in sona.js: the fourteen stories come before the game of the day for every child, a new story every calendar day played or not with a skipped one coming back (CAL1), Premium by the books' rule (never the demonstration window, never a locked card on a phone that cannot buy), one sticker a finished day, the offer a locked card opens, a story's game hands back to its story
   "homestorytest.mjs", // Play Map: original portrait story and action, real completed days, locked tomorrow, no child sound picker/video, doors, earned games, access/routes/history and quiet behavior
   "compacthometest.mjs", // Entire Home, including doors and found games, fits supported phones and iPads; Arcade still scrolls
@@ -183,10 +187,12 @@ const SUITES = [
   "levelsplaytest.mjs", // LEVELS1 in Bubble Pop, Hoops, Soccer Goal and Dino Dig: the page hands the level to the engine, the help is Level 1's, the start card names it; Feed Echo keeps one
   "slptest.mjs",   // SLP1: the clinician dashboard — live Today, honest register, one door, real remove, the note
   "boardtest.mjs", // BOARD2: the Practice Board's phone half, built dark: nothing shows while off, a grown-up's email turns it on, a goal day goes once with 10 reps, Home sends nothing, deletion always works
-  "dayplantest.mjs", // the session planner: only sound, position, age and minutes reach the AI
-  "slpworkflowtest.mjs", // quick homework, per-child plans, feedback/call UI and failure recovery
-  "slpcommunityapi.mjs", // shared community access, persistence, privacy and ownership
-  "slpcommunitytest.mjs", // shared conversations, draft recovery and mobile layout
+  "sessiongamestest.mjs", // SLPPRO1: Session games: the AI picks Sona's own games (the catalog held to sona.js), read strictly, never a caseload name; Play now's server yes; game ideas
+  "sessplaytest.mjs",      // SESSPLAY1: a game played in a clinician's session: set to the child's sound, every game open in the tab, the family's storage untouched, nothing sent, back to Session games
+  "slpworkflowtest.mjs", // quick homework, child navigation, feedback/call UI and failure recovery
+  // slpcommunityapi.mjs and slpcommunitytest.mjs went with the clinician
+  // community (Travis, 17 Nov 2026: removed from the dashboard); the delete
+  // of an account still scrubs its old posts, pinned in slpapptest.
   "slpfeedbacktest.mjs", // authenticated feedback, call requests refused; confirmed receipt only
   "slpdesigntest.mjs", // SLP workspace: filters, failure recovery, bulk assignments, mobile layout
   "craftedarttest.mjs", // every Feed word has loadable, usable illustrated artwork

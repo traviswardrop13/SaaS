@@ -45,7 +45,9 @@ export async function POST(req: NextRequest) {
   if (!done.ok) {
     return NextResponse.json({ ok: false, error: "We couldn't open your dashboard. Ask for a new code." }, { status: done.err === "store" ? 503 : 400 });
   }
-  const res = NextResponse.json({ ok: true });
+  // `fresh`: this code made the account, so a browser goes on to the free
+  // trial as the link does (TRIALGO1). The clinicians' app ignores it.
+  const res = NextResponse.json({ ok: true, fresh: done.fresh });
   res.headers.set("Set-Cookie", done.cookie);
   return res;
 }

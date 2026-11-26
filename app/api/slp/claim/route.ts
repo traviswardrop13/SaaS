@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readTicket, kvCmd, kvConfigured } from "@/lib/slpAuth";
+import { cleanGames, writeGames } from "@/lib/childGames";
 import { normalizeHomework, readHomework, writeHomework, isoDay, type Homework, type HomeworkRecord } from "@/lib/homework";
 import { rateLimit } from "@/lib/rateLimit";
 import { moveLoginToChild } from "@/lib/familyLogin";
@@ -130,6 +131,12 @@ export async function POST(req: NextRequest) {
     const rec: HomeworkRecord = { hw, progress: { id: hw.id, days: {}, updatedAt: now } };
     await writeHomework(code, childId, rec);
   }
+
+  // The games the therapist picked (CHILDGAMES1): the child's device reads
+  // them with its homework. An invite from before, or "All games", writes
+  // nothing, so the child has every game their plan opens.
+  const games = cleanGames(data.games);
+  if (games) await writeGames(code, childId, games);
 
   // Only WHEN: joined now, invited then. No label, no age — the enrol beacon
   // the device fires beside this request carries what the parent typed, and

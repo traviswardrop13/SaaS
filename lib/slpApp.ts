@@ -16,11 +16,24 @@ export const SLP_APP_UA = /\bSonaSLPApp\/\d/;
 /** Pages the clinicians' app may show; any other .html goes to the dashboard. */
 export const SLP_APP_PAGES = ["slp.html", "slp-login.html", "privacy.html"];
 
+/**
+ * SESSION PLAY (SESSPLAY1, 17 Nov 2026, Travis: "I want it built into their
+ * app"): the pages a game played in a session needs, the practice page, every
+ * game page, the talking story and the bookshelf. They may load in the app,
+ * and public/sona.js sends any of them straight back to the dashboard unless
+ * this tab holds a session the server said yes to (its record is in the tab's
+ * sessionStorage, which the server never sees). Never the family's Home,
+ * setup, Settings or the price screen.
+ */
+export const SLP_APP_PLAY_PAGE = /^(charge|library|adventure|arcade-[a-z]+)\.html$/;
+
 export function slpAppRequest(userAgent: string | null | undefined): boolean {
   return SLP_APP_UA.test(String(userAgent || ""));
 }
 
 export function slpAppPageAllowed(pathname: string): boolean {
   const m = /^\/([a-z0-9-]+\.html)$/i.exec(pathname || "");
-  return !m || SLP_APP_PAGES.indexOf(m[1].toLowerCase()) >= 0;
+  if (!m) return true;
+  const page = m[1].toLowerCase();
+  return SLP_APP_PAGES.indexOf(page) >= 0 || SLP_APP_PLAY_PAGE.test(page);
 }

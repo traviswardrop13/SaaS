@@ -2,8 +2,9 @@ import crypto from "node:crypto";
 import { kvCmd, rosterKey } from "@/lib/slpAuth";
 import { metaKey, goneKey, invIndexKey, invDataKey, invClaimKey, readInviteIndex, DELETED_CODE } from "@/lib/roster";
 import { hwKey } from "@/lib/homework";
+import { gamesKey } from "@/lib/childGames";
 import { loginKey, loginIndexKey, failKey, readLoginIndex } from "@/lib/familyLogin";
-import { currentPlan, recordActive, planKey, accessKey, StoreUnavailable, type PlanKind } from "@/lib/caseload";
+import { currentPlan, recordActive, planKey, accessKey, teamKey, teamOfKey, parseTeamRow, StoreUnavailable, type PlanKind } from "@/lib/caseload";
 import { signInCodeKey, signInTryKey } from "@/lib/slpSignIn";
 import { markUnsubscribed } from "@/lib/contacts";
 
@@ -17,8 +18,11 @@ import { markUnsubscribed } from "@/lib/contacts";
  * every invite and every family login made for one; the clinician's own
  * Premium links, plan notes and sign-up counters; their messages to Sona;
  * their community posts and replies (and reports that quote them), and their
- * block list; their sign-in code. Every session ends. The address leaves the
- * email list too (`email:unsub`, and Resend's contact).
+ * block list (Community was removed on 17 Nov 2026; what it stored is still
+ * someone's words, and still goes); their sign-in code. Their Sona Clinic
+ * team (17 Nov 2026): an owner's team goes, and each member's link to it; a
+ * member leaves the team they were on. Every session ends. The address
+ * leaves the email list too (`email:unsub`, and Resend's contact).
  *
  * What stays, and why:
  *  - THE CLINIC CODE, reserved forever as `DELETED_CODE`. A family's phone
@@ -32,7 +36,9 @@ import { markUnsubscribed } from "@/lib/contacts";
  * NOT WHILE A PAID PLAN STILL RENEWS. Deleting the account would leave Stripe
  * charging a card for a dashboard that no longer exists, so a plan that will
  * renew must be cancelled first (one that is cancelled and running out its
- * paid month is fine). A store that does not answer deletes nothing.
+ * paid month is fine), a Sona Clinic owner's included. A member's clinic is
+ * the owner's plan, not theirs, and never blocks it. A store that does not
+ * answer deletes nothing.
  */
 export { DELETED_CODE, codeDeleted } from "@/lib/roster";
 
@@ -109,7 +115,7 @@ export async function deleteClinicianAccount(
   // does not answer, the last thing it said stands (lib/caseload currentPlan).
   const renewing: PlanKind[] = [];
   try {
-    for (const kind of ["pro", "caseload", "self"] as PlanKind[]) {
+    for (const kind of ["pro", "clinic", "caseload", "self"] as PlanKind[]) {
       const rec = await currentPlan(email, { kv, now, kind, force: true });
       if (recordActive(rec, now) && !rec!.cancelAtPeriodEnd) renewing.push(kind);
     }
@@ -132,7 +138,7 @@ export async function deleteClinicianAccount(
     const logins = await readLoginIndex(code, kv);
     for (const user of Object.values(logins)) if (user) await kv(["DEL", loginKey(user), failKey(user)]);
     await kv(["DEL",
-      rosterKey(code), "slp:" + code.toUpperCase(), hwKey(code), metaKey(code), goneKey(code),
+      rosterKey(code), "slp:" + code.toUpperCase(), hwKey(code), gamesKey(code), metaKey(code), goneKey(code),
       invIndexKey(code), loginIndexKey(code), "slpredeem:" + code, "slp-feedback:" + code,
     ]);
     await scanDel("slpself:" + code + ":*", kv);
@@ -142,8 +148,27 @@ export async function deleteClinicianAccount(
     COMMUNITY + "posts", COMMUNITY + "index", COMMUNITY + "index:", COMMUNITY + "reports",
     COMMUNITY + "members", COMMUNITY + "blocks:" + communityId(email), communityId(email)]);
 
+  // SONA CLINIC. As an owner: the team goes, and each member's link to it
+  // (only where it still names this owner), so nobody is left pointing at a
+  // plan that no longer has an account. As a member: off the owner's team.
+  const team = await kv(["HGETALL", teamKey(email)]);
+  if (team === undefined) return { ok: false, why: "store" };
+  if (Array.isArray(team)) {
+    for (let i = 0; i + 1 < team.length; i += 2) {
+      const m = String(team[i]).toLowerCase();
+      if ((await kv(["GET", teamOfKey(m)])) === email) await kv(["DEL", teamOfKey(m)]);
+      // An invitation still out goes too (18 Nov 2026): its seat is gone.
+      const row = parseTeamRow(team[i + 1]);
+      if (row && row.inv) await kv(["DEL", "slpteaminv:" + row.inv]);
+    }
+  }
+  const myOwner = await kv(["GET", teamOfKey(email)]);
+  if (myOwner === undefined) return { ok: false, why: "store" };
+  if (typeof myOwner === "string" && myOwner) await kv(["HDEL", teamKey(myOwner), email]);
+  await kv(["DEL", teamKey(email), teamOfKey(email)]);
+
   await kv(["DEL",
-    planKey(email, "caseload"), planKey(email, "self"), planKey(email, "pro"), accessKey(email),
+    planKey(email, "caseload"), planKey(email, "self"), planKey(email, "pro"), planKey(email, "clinic"), accessKey(email),
     "slpredeem-owner:" + email, "slp-feedback:" + email, "slprl:" + email,
     signInCodeKey(email), signInTryKey(email),
   ]);

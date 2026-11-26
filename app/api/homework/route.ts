@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { readTicket, kvConfigured } from "@/lib/slpAuth";
 import { readHomework, writeHomework, isActive, isoDay, type Homework } from "@/lib/homework";
 import { isGone } from "@/lib/roster";
+import { readGames } from "@/lib/childGames";
 import { rateLimit } from "@/lib/rateLimit";
 
 /**
@@ -98,5 +99,8 @@ export async function POST(req: NextRequest) {
   }
 
   const hw = rec.hw && isActive(rec.hw) ? publicHomework(rec.hw) : null;
-  return NextResponse.json({ ok: true, hw });
+  // The games the therapist picked for this child (CHILDGAMES1), or null for
+  // every game. Not tied to the homework's dates: it holds until they change it.
+  const games = await readGames(code, childId);
+  return NextResponse.json({ ok: true, hw, games });
 }
