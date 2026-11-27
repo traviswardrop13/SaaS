@@ -22,7 +22,7 @@
 })();
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Sona for speech therapists — speech homework kids ask for</title>
+  <title>Sona for speech therapists — give families speech homework they’ll actually use</title>
   <meta name="description" content="Sona Pro for speech therapists: play Sona games in your sessions, share the app with clients, and see who practiced at home. Built with Rachel, MS, CF-SLP." />
   <!-- THE CLINICIANS' PLANS PAGE (17 Nov 2026, the free packet left out on
        20 Nov 2026). Served at /plans and /checkout (next.config.js); since
@@ -39,14 +39,14 @@
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Sona" />
   <meta property="og:url" content="https://www.speaksona.com/plans" />
-  <meta property="og:title" content="Speech homework kids ask for." />
+  <meta property="og:title" content="Give families speech homework they’ll actually use." />
   <meta property="og:description" content="Sona Pro for speech therapists: play Sona games in your sessions, share the app with clients, and see who practiced at home." />
   <meta property="og:image" content="https://speaksona.com/og-slp.png?v=6" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta property="og:image:alt" content="Sona for speech therapists." />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Speech homework kids ask for." />
+  <meta name="twitter:title" content="Give families speech homework they’ll actually use." />
   <meta name="twitter:description" content="Sona Pro for speech therapists: play Sona games in your sessions, share the app with clients, and see who practiced at home." />
   <meta name="twitter:image" content="https://speaksona.com/og-slp.png?v=6" />
 
@@ -101,16 +101,17 @@
     <p class="eyebrow" id="heroEye">Sona for speech therapists</p>
     <!-- A HEADLINE THAT NAMES THE PROBLEM (Travis, 25 Nov 2026: "a more
          compelling headline", with GoHighLevel's Black Friday page to draw
-         on; then "speech homework kids ask for"). The lede under it is
-         unchanged ("sub headline is great"). -->
-    <h1 id="heroH">Speech homework kids <span>ask for.</span></h1>
+         on; then "speech homework kids ask for"; then, 26 Nov 2026, "give
+         families speech homework they'll actually use" — headline only, the
+         lede under it is unchanged). -->
+    <h1 id="heroH">Give families speech homework <span>they’ll actually use.</span></h1>
     <p class="lede" id="heroLede">Play Sona games in your sessions, share the app with clients, and see who practiced at home.</p>
     <!-- THE OPT-IN'S TOP, WORD FOR WORD, THIS WEEK (Travis, 25 Nov 2026: "i
          want this same vibe and copy on the checkout page too"): while the
          Black Friday mode is on, the script at the foot turns this band navy
          and gives it /blackfriday's tag, headline, line, countdown and end
          (bf.html), then puts the words above back at the end. -->
-    <p class="bf-sub" id="bfSub" hidden>Send it home free to every family on your caseload.</p>
+    <p class="bf-sub" id="bfSub" hidden>Kids say their sound to play. Free for every family on your caseload.</p>
     <div class="countdown" id="cd" role="timer" aria-label="Time left in the Black Friday deal" hidden>
       <div><b id="cdD">0</b><span>days</span></div>
       <div><b id="cdH">00</b><span>hours</span></div>
@@ -580,7 +581,7 @@
       heroBand.classList.toggle("bf-band", on);
       $("heroEye").className = on ? "bf-tag" : heroWas.eye;
       $("heroEye").textContent = on ? "Black Friday \u00b7 for SLPs and SLPAs" : "Sona for speech therapists";
-      if (on) $("heroH").textContent = "Speech practice kids actually want to do."; else $("heroH").innerHTML = heroWas.h;
+      if (on) $("heroH").textContent = "Give families speech homework they’ll actually use."; else $("heroH").innerHTML = heroWas.h;
       $("heroLede").hidden = on; $("bfSub").hidden = !on; $("cd").hidden = !on; $("bfEnds").hidden = !on;
     }
     // The page's own words, kept to put back at the end.

@@ -519,7 +519,7 @@ const keepTracks = () => Object.defineProperty(window, "sonaTrack", { configurab
   const cd = await page.evaluate(() => ["cdD", "cdH", "cdM"].map((id) => document.getElementById(id).textContent).join(":"));
   ok("Thursday at noon Mountain: 3 days 11 hours 59 minutes left to Sunday 11:59 PM", cd === "3:11:59" || cd === "3:11:58", cd);
   ok("…the headline, no price, Get Started, and no plans on the page", await page.evaluate(() =>
-    /Speech practice kids actually want to do\./.test(document.body.innerText) && !/half off/i.test(document.body.innerText) && !/\$\d/.test(document.body.innerText) && /Ends Sunday, November 29 at 11:59 PM Mountain\./.test(document.body.innerText) &&
+    /Give families speech homework they’ll actually use\./.test(document.body.innerText) && !/half off/i.test(document.body.innerText) && !/\$\d/.test(document.body.innerText) && /Ends Sunday, November 29 at 11:59 PM Mountain\./.test(document.body.innerText) &&
     document.getElementById("oGo").textContent.trim() === "Get Started" && !document.getElementById("pricing")));
   // Travis, 25 Nov 2026: "Let's add the testimonial to the opt-in page too".
   ok("…and Lindi's review, under Get Started, with the button still on the first screen", await page.evaluate(() => {
@@ -550,8 +550,8 @@ const keepTracks = () => Object.defineProperty(window, "sonaTrack", { configurab
     const band = document.querySelector(".hero-band"), t = (id) => document.getElementById(id).innerText.replace(/\s+/g, " ").trim();
     return band.classList.contains("bf-band") && getComputedStyle(band).backgroundImage.includes("gradient") &&
       document.getElementById("heroEye").className === "bf-tag" && t("heroEye") === "Black Friday · for SLPs and SLPAs" &&
-      t("heroH") === "Speech practice kids actually want to do." && document.getElementById("heroLede").hidden &&
-      t("bfSub") === "Send it home free to every family on your caseload." && t("bfEnds") === "Ends Sunday, November 29 at 11:59 PM Mountain." &&
+      t("heroH") === "Give families speech homework they’ll actually use." && document.getElementById("heroLede").hidden &&
+      t("bfSub") === "Kids say their sound to play. Free for every family on your caseload." && t("bfEnds") === "Ends Sunday, November 29 at 11:59 PM Mountain." &&
       !/half off/i.test(document.body.innerText);
   }));
   ok("…with no email box, the email waiting in this tab", (await page.$("#fEmail")) === null &&
@@ -574,7 +574,7 @@ const keepTracks = () => Object.defineProperty(window, "sonaTrack", { configurab
   const after = await settles(page, () => document.getElementById("bfBar").hidden && document.getElementById("bfDeal").hidden &&
     document.getElementById("heroEye").textContent === "Sona for speech therapists" && document.getElementById("heroEye").className === "eyebrow" &&
     !document.querySelector(".hero-band").classList.contains("bf-band") && document.getElementById("cd").hidden && document.getElementById("bfSub").hidden && document.getElementById("bfEnds").hidden &&
-    document.getElementById("heroH").innerText.replace(/\s+/g, " ").trim() === "Speech homework kids ask for." && !document.getElementById("heroLede").hidden &&
+    document.getElementById("heroH").innerText.replace(/\s+/g, " ").trim() === "Give families speech homework they’ll actually use." && !document.getElementById("heroLede").hidden &&
     document.getElementById("fTerms").textContent === "14 days free, then $19.99 a month. Cancel anytime." && !document.getElementById("fTerms").hidden &&
     document.getElementById("proWas").hidden && document.querySelector("#planPro .price b").textContent === "$19.99" &&
     document.getElementById("proTerms").textContent === "Cancel anytime." &&

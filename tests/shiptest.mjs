@@ -276,11 +276,12 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     .replace(/<[^>]+>/g, "").replace(/&rsquo;/g, "’").replace(/\s+/g, " ").trim();
   ok("the clinician page's headline, tab title and shared card carry the new message",
     // Travis, 25 Nov 2026: "a more compelling headline", then "speech
-    // homework kids ask for".
-    slpHeadline === "Speech homework kids ask for." &&
-    /<title>[^<]*speech homework kids ask for[^<]*<\/title>/i.test(slps) &&
-    /og:title" content="Speech homework kids ask for\."/.test(slps) &&
-    /twitter:title" content="Speech homework kids ask for\."/.test(slps));
+    // homework kids ask for"; 26 Nov 2026: "give families speech homework
+    // they'll actually use".
+    slpHeadline === "Give families speech homework they’ll actually use." &&
+    /<title>[^<]*give families speech homework they’ll actually use[^<]*<\/title>/i.test(slps) &&
+    /og:title" content="Give families speech homework they’ll actually use\."/.test(slps) &&
+    /twitter:title" content="Give families speech homework they’ll actually use\."/.test(slps));
   // A parent's real App Store review (Travis, 25 Nov 2026): her own words,
   // cut short at the "…" to two lines, never a word changed.
   ok("the clinician page carries Lindi's App Store review in her own words, cut at an ellipsis, named as a parent's review",
@@ -561,7 +562,7 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     // Travis, 25 Nov 2026: "not have anything about pricing in the email
     // collection": the opt-in only takes the email; the figures are /plans'.
     ok("the Black Friday opt-in leads with the practice, says when the deal ends, shows no price or trial, and under the button only \"Unsubscribe anytime.\"",
-      bfShown.includes("Speech practice kids actually want to do. Send it home free to every family on your caseload.") && !/half off/i.test(bfPage) &&
+      bfShown.includes("Give families speech homework they’ll actually use. Kids say their sound to play. Free for every family on your caseload.") && !/half off/i.test(bfPage) &&
       bfShown.includes("Ends Sunday, November 29 at 11:59 PM Mountain.") && !/\$\d/.test(bfShown) &&
       !/free trial|days free|email you about/i.test(bfShown) && bfShown.includes("Unsubscribe anytime."), bfShown.slice(0, 300));
     // One word for the deal across the funnel (Travis, 25 Nov 2026: the
